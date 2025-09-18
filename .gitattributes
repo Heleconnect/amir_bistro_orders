@@ -1,2 +1,48 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# ================= Flutter / Dart =================
+.dart_tool/
+.packages
+.pub-cache/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+
+# ================= Android =================
+**/android/.gradle/
+**/android/local.properties
+**/android/key.properties
+**/android/app/build/
+**/android/*/build/
+.gradle/
+*.keystore
+*.jks
+
+# ================= iOS =================
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/.last_build_id
+.generated/
+.flutter-plugins
+**/ios/Flutter/flutter_export_environment.sh
+
+# ================= Web / Linux / Windows / Mac =================
+**/linux/flutter/
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+**/windows/flutter/
+**/web/.dart_tool/
+
+# ================= Emulator & AVD =================
+*.avd
+*.img
+
+# ================= Auto-generated libraries =================
+*.so
+*.jar
+
+# ================= IDEs / Editors =================
+.vscode/
+.idea/
+*.iml
+
+# ================= Misc =================
+pubspec.lock
