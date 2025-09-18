@@ -41,7 +41,7 @@ dependencies:
   usb_esc_printer: ^0.3.0
 
   # ================== 📌 QR Code ==================
-  qr_flutter: ^4.2.0
+  qr_flutter: ^4.1.0   # ✅ آخر نسخة متوفرة
   mobile_scanner: ^2.1.0
   barcode_widget: ^2.0.0
 
