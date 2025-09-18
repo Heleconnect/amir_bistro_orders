@@ -1,10 +1,12 @@
 # codemagic.yaml
 workflows:
   android-debug:
-    name: Android Debug Build
+    name: Amir Bistro - Debug APK Build
+    max_build_duration: 30
     environment:
+      flutter: stable
       vars:
-        PACKAGE_NAME: "com.example.amir_bistro_orders" # عدّلها حسب package name عندك
+        PACKAGE_NAME: "com.example.amir_bistro_orders"
 
     triggering:
       events:
@@ -14,10 +16,15 @@ workflows:
           include: true
 
     scripts:
-      - name: Install Flutter
+      - name: Install Flutter & Dependencies
         script: |
           flutter --version
+          flutter clean
           flutter pub get
+
+      - name: Analyze Project
+        script: |
+          flutter analyze
 
       - name: Build Debug APK
         script: |
