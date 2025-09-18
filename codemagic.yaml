@@ -1,0 +1,42 @@
+# codemagic.yaml
+workflows:
+  android-debug:
+    name: Android Debug Build
+    environment:
+      vars:
+        PACKAGE_NAME: "com.example.amir_bistro_orders" # غيرها بـ package name التطبيق
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+
+    scripts:
+      - name: Install Flutter
+        script: |
+          flutter --version
+          flutter pub get
+
+      - name: Build Debug APK
+        script: |
+          flutter build apk --debug \
+            --dart-define=PACKAGE_NAME=$PACKAGE_NAME
+
+      - name: Build Release APK (غير موقعة)
+        script: |
+          flutter build apk --release --no-tree-shake-icons \
+            --dart-define=PACKAGE_NAME=$PACKAGE_NAME
+
+    artifacts:
+      - build/**/outputs/**/*.apk
+      - build/**/outputs/**/flutter-apk/**/*.apk
+
+    publishing:
+      email:
+        recipients:
+          - mo.fadel1096@gmail.com # غيرها بإيميلك
+        notify:
+          success: true
+          failure: true
