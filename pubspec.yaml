@@ -99,6 +99,6 @@ flutter:
         - asset: assets/fonts/Cairo-Light.ttf
           weight: 300
 
-  # التخصيصات للغات RTL
-  flutter_intl:
-    enabled: true
+# ================== 📌 إعدادات الترجمة ==================
+flutter_intl:
+  enabled: true
