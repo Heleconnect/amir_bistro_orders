@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/amir_bistro_orders.iml" filepath="$PROJECT_DIR$/amir_bistro_orders.iml" />
+      <module fileurl="file://$PROJECT_DIR$/android/amir_bistro_orders_android.iml" filepath="$PROJECT_DIR$/android/amir_bistro_orders_android.iml" />
+    </modules>
+  </component>
+</project>

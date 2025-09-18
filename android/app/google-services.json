@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "578128749767",
+    "project_id": "amir-bistro-orders-34a59",
+    "storage_bucket": "amir-bistro-orders-34a59.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:578128749767:android:6d76cf7bf28af5ddee8ae2",
+        "android_client_info": {
+          "package_name": "com.example.amir_bistro_orders"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD2-wg6y1ZRI-1uQDapqFl4OsHk9_NIuCs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:578128749767:android:d7d6fc3cec7e46b5ee8ae2",
+        "android_client_info": {
+          "package_name": "com.mo_fadel.amir_bistro_orders"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD2-wg6y1ZRI-1uQDapqFl4OsHk9_NIuCs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

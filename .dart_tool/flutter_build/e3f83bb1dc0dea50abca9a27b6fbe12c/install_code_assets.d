@@ -1,0 +1,1 @@
+ C:\\Users\\Mo\\amir_bistro_orders\\.dart_tool\\flutter_build\\e3f83bb1dc0dea50abca9a27b6fbe12c\\native_assets.json: 
