@@ -4,7 +4,7 @@ workflows:
     name: Android Debug Build
     environment:
       vars:
-        PACKAGE_NAME: "com.example.amir_bistro_orders" # غيرها بـ package name التطبيق
+        PACKAGE_NAME: "com.example.amir_bistro_orders" # عدّلها حسب package name عندك
 
     triggering:
       events:
@@ -24,19 +24,13 @@ workflows:
           flutter build apk --debug \
             --dart-define=PACKAGE_NAME=$PACKAGE_NAME
 
-      - name: Build Release APK (غير موقعة)
-        script: |
-          flutter build apk --release --no-tree-shake-icons \
-            --dart-define=PACKAGE_NAME=$PACKAGE_NAME
-
     artifacts:
-      - build/**/outputs/**/*.apk
-      - build/**/outputs/**/flutter-apk/**/*.apk
+      - build/app/outputs/flutter-apk/app-debug.apk
 
     publishing:
       email:
         recipients:
-          - mo.fadel1096@gmail.com # غيرها بإيميلك
+          - mo.fadel1096@gmail.com
         notify:
           success: true
           failure: true
