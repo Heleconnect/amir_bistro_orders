@@ -5,7 +5,7 @@ import '../providers/items_provider.dart';
 import '../providers/orders_provider.dart';
 import '../providers/settings_provider.dart';
 import '../models/item.dart' as model;
-import '../models/order.dart';
+import '../models/order.dart' as app_models; // ✅ alias
 import '../services/printing_service.dart';
 
 class AddOrderScreen extends StatefulWidget {
@@ -18,12 +18,12 @@ class AddOrderScreen extends StatefulWidget {
 }
 
 class _AddOrderScreenState extends State<AddOrderScreen> {
-  final List<OrderItem> _orderItems = [];
+  final List<app_models.OrderItem> _orderItems = [];
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
 
   void _addItem(model.Item item, int quantity, {List<String>? notes}) {
     final orderItem =
-    OrderItem(item: item, quantity: quantity, notes: notes ?? []);
+        app_models.OrderItem(item: item, quantity: quantity, notes: notes ?? []);
     _orderItems.add(orderItem);
     _listKey.currentState?.insertItem(
       _orderItems.length - 1,
@@ -36,7 +36,7 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
     final removedItem = _orderItems.removeAt(index);
     _listKey.currentState?.removeItem(
       index,
-          (context, animation) => _buildAnimatedItem(removedItem, animation, index),
+      (context, animation) => _buildAnimatedItem(removedItem, animation, index),
       duration: const Duration(milliseconds: 300),
     );
     setState(() {});
@@ -64,8 +64,7 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
   double get total =>
       _orderItems.fold(0, (sum, e) => sum + e.item.price * e.quantity);
 
-  int get totalPieces =>
-      _orderItems.fold(0, (sum, e) => sum + e.quantity);
+  int get totalPieces => _orderItems.fold(0, (sum, e) => sum + e.quantity);
 
   Future<void> _showAddItemDialog() async {
     final itemsProvider = Provider.of<ItemsProvider>(context, listen: false);
@@ -80,7 +79,7 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
       builder: (_) => StatefulBuilder(
         builder: (context, setStateDialog) => AlertDialog(
           shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: const Text('➕ إضافة صنف'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -108,9 +107,9 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
                   items: itemsProvider.items
                       .where((i) => i.categoryId == selectedCategoryId)
                       .map((i) => DropdownMenuItem(
-                      value: i,
-                      child: Text(
-                          "${i.name} - ${i.price.toStringAsFixed(2)}")))
+                          value: i,
+                          child: Text(
+                              "${i.name} - ${i.price.toStringAsFixed(2)}")))
                       .toList(),
                   onChanged: (val) => setStateDialog(() => selectedItem = val),
                 ),
@@ -123,7 +122,7 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
               const SizedBox(height: 8),
               TextField(
                 decoration:
-                const InputDecoration(labelText: 'ملاحظة (اختياري)'),
+                    const InputDecoration(labelText: 'ملاحظة (اختياري)'),
                 onChanged: (val) => note = val,
               ),
             ],
@@ -154,7 +153,7 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
     final ordersProvider = Provider.of<OrdersProvider>(context, listen: false);
     final settings = Provider.of<SettingsProvider>(context, listen: false);
 
-    final order = Order(
+    final order = app_models.Order(
       items: _orderItems,
       total: total,
       createdAt: DateTime.now(),
@@ -182,7 +181,7 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
   }
 
   Widget _buildAnimatedItem(
-      OrderItem item, Animation<double> animation, int index) {
+      app_models.OrderItem item, Animation<double> animation, int index) {
     return SizeTransition(
       sizeFactor: animation,
       child: Card(
@@ -239,7 +238,6 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Column(
                   children: [
-                    // ✅ عدد الأصناف + عدد القطع + الإجمالي
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [

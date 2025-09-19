@@ -20,14 +20,12 @@ class OrdersProvider with ChangeNotifier {
   final SettingsProvider settings;
 
   OrdersProvider({required this.settings}) {
-    // ✅ الاستماع المباشر لتغييرات الطلبات من Firebase
     _firestore
         .collection("orders")
         .orderBy("number", descending: true)
         .snapshots()
         .listen(_updateOrdersFromSnapshot);
 
-    // ✅ محاولة إعادة المزامنة كل 10 ثوانٍ
     Timer.periodic(const Duration(seconds: 10), (_) {
       if (_pendingSyncOrders.isNotEmpty) {
         _syncPendingOrders();
@@ -41,8 +39,8 @@ class OrdersProvider with ChangeNotifier {
 
   List<app_models.Order> get filteredOrders {
     return _orders.where((o) {
-      final matchesSearch = _searchQuery.isEmpty ||
-          o.number.toString().contains(_searchQuery);
+      final matchesSearch =
+          _searchQuery.isEmpty || o.number.toString().contains(_searchQuery);
 
       final matchesFilter = _filterType == OrdersFilterType.all ||
           (_filterType == OrdersFilterType.done && o.done) ||
@@ -63,7 +61,8 @@ class OrdersProvider with ChangeNotifier {
 
     final snapshot = await _firestore.collection("orders").get();
     for (var doc in snapshot.docs) {
-      final order = app_models.Order.fromJson(doc.data() as Map<String, dynamic>);
+      final order =
+          app_models.Order.fromJson(doc.data() as Map<String, dynamic>);
       if (!_orders.any((o) => o.number == order.number)) {
         final orderId = await DBHelper.insertOrder(order);
         order.id = orderId;

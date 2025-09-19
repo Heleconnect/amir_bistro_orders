@@ -24,13 +24,11 @@ class NotesProvider with ChangeNotifier {
   // تحميل الملاحظات (كلها)
   // ======================
   Future<void> loadNotes() async {
-    // 🔹 تحميل محلي
     final localNotes = await DBHelper.getAllNotes();
     _notes
       ..clear()
       ..addAll(localNotes);
 
-    // 🔹 تحميل من Firebase ودمج
     final snapshot = await _firestore.collection("notes").get();
     for (var doc in snapshot.docs) {
       final note = Note.fromJson(doc.data());
@@ -73,7 +71,6 @@ class NotesProvider with ChangeNotifier {
     final index = _notes.indexWhere((n) => n.id == note.id);
     if (index == -1) return;
 
-    // ✅ تعديل نسخة جديدة بدلاً من التغيير على final
     final updatedNote = Note(
       id: note.id,
       content: newContent,
@@ -87,7 +84,7 @@ class NotesProvider with ChangeNotifier {
           .collection("notes")
           .doc(note.id.toString())
           .update({'content': newContent});
-      await DBHelper.insertNote(updatedNote); // نحدث SQLite
+      await DBHelper.insertNote(updatedNote);
     } catch (_) {
       _pendingNotes.add(updatedNote);
     }
@@ -104,7 +101,6 @@ class NotesProvider with ChangeNotifier {
       await _firestore.collection("notes").doc(note.id.toString()).delete();
     } catch (_) {}
 
-    // 🔹 SQLite
     if (note.id != null) {
       await DBHelper.deleteNote(note.id!);
     }
@@ -154,10 +150,7 @@ class NotesProvider with ChangeNotifier {
   Future<void> syncPendingNotes() async {
     for (var note in List<Note>.from(_pendingNotes)) {
       try {
-        await _firestore
-            .collection("notes")
-            .doc(note.id.toString())
-            .set(note.toJson());
+        await _firestore.collection("notes").doc(note.id.toString()).set(note.toJson());
         _pendingNotes.remove(note);
       } catch (_) {}
     }

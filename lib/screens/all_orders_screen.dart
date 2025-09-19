@@ -4,8 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/settings_provider.dart';
 import '../services/printing_service.dart';
-import '../models/order.dart';
-import '../models/item.dart';
+import '../models/order.dart' as app_models; // ✅ alias
 
 // ✅ Enum للفلترة
 enum OrderFilter { all, done, notDone }
@@ -22,7 +21,7 @@ class AllOrdersScreen extends StatefulWidget {
 class _AllOrdersScreenState extends State<AllOrdersScreen> {
   final TextEditingController searchController = TextEditingController();
   String searchQuery = "";
-  OrderFilter filter = OrderFilter.all; // ✅ باستخدام enum
+  OrderFilter filter = OrderFilter.all;
 
   @override
   void dispose() {
@@ -43,7 +42,6 @@ class _AllOrdersScreenState extends State<AllOrdersScreen> {
         ),
         body: Column(
           children: [
-            // 🔎 مربع البحث
             Padding(
               padding: const EdgeInsets.all(12.0),
               child: TextField(
@@ -60,14 +58,14 @@ class _AllOrdersScreenState extends State<AllOrdersScreen> {
                   ),
                   suffixIcon: searchController.text.isNotEmpty
                       ? IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      setState(() {
-                        searchController.clear();
-                        searchQuery = "";
-                      });
-                    },
-                  )
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            setState(() {
+                              searchController.clear();
+                              searchQuery = "";
+                            });
+                          },
+                        )
                       : null,
                 ),
                 onChanged: (val) {
@@ -77,8 +75,6 @@ class _AllOrdersScreenState extends State<AllOrdersScreen> {
                 },
               ),
             ),
-
-            // 🔽 فلترة الطلبات (تظهر فقط إذا الميزة مفعلة)
             if (settings.completedEnabled)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -106,8 +102,6 @@ class _AllOrdersScreenState extends State<AllOrdersScreen> {
                 ),
               ),
             if (settings.completedEnabled) const SizedBox(height: 8),
-
-            // 📡 StreamBuilder → Real-time orders
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
@@ -118,7 +112,6 @@ class _AllOrdersScreenState extends State<AllOrdersScreen> {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
-
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                     return const Center(
                       child: Text(
@@ -128,16 +121,14 @@ class _AllOrdersScreenState extends State<AllOrdersScreen> {
                     );
                   }
 
-                  // تحويل البيانات إلى List<Order>
                   final orders = snapshot.data!.docs.map((doc) {
-                    return Order.fromJson(doc.data() as Map<String, dynamic>);
+                    return app_models.Order.fromJson(
+                        doc.data() as Map<String, dynamic>);
                   }).where((order) {
-                    // فلترة البحث
                     if (searchQuery.isNotEmpty &&
                         !order.number.toString().contains(searchQuery.trim())) {
                       return false;
                     }
-                    // فلترة حسب الحالة (إذا الميزة مفعلة)
                     if (settings.completedEnabled) {
                       if (filter == OrderFilter.done) return order.done;
                       if (filter == OrderFilter.notDone) return !order.done;
@@ -166,7 +157,7 @@ class _AllOrdersScreenState extends State<AllOrdersScreen> {
                         elevation: 3,
                         color: order.done
                             ? Colors.green.withOpacity(0.1)
-                            : null, // ✅ لون مختلف للطلبات المنجزة
+                            : null,
                         child: ListTile(
                           contentPadding: const EdgeInsets.symmetric(
                               horizontal: 20, vertical: 12),
@@ -190,7 +181,7 @@ class _AllOrdersScreenState extends State<AllOrdersScreen> {
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              ...order.items.map((OrderItem oi) {
+                              ...order.items.map((app_models.OrderItem oi) {
                                 final notes = oi.notes.isNotEmpty
                                     ? " (${oi.notes.join(', ')})"
                                     : "";
@@ -214,14 +205,13 @@ class _AllOrdersScreenState extends State<AllOrdersScreen> {
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              // 🖨️ زر الطباعة
                               IconButton(
                                 icon: const Icon(Icons.print,
                                     color: Colors.green),
                                 tooltip: 'طباعة مباشرة',
                                 onPressed: () async {
                                   final printer =
-                                  PrintingService(settings: settings);
+                                      PrintingService(settings: settings);
 
                                   final kitchenInvoice = {
                                     "id": order.number,
@@ -236,18 +226,15 @@ class _AllOrdersScreenState extends State<AllOrdersScreen> {
                                     "id": order.number,
                                     "total": order.total,
                                     "title": "فاتورة الزبون",
-                                    "restaurantName":
-                                    settings.restaurantName,
+                                    "restaurantName": settings.restaurantName,
                                     "restaurantAddress":
-                                    settings.restaurantAddress,
+                                        settings.restaurantAddress,
                                   };
 
                                   await printer.ensurePrinterAndPrint(
                                       kitchenInvoice, customerInvoice);
                                 },
                               ),
-
-                              // 🗑️ حذف الطلب
                               IconButton(
                                 icon: const Icon(Icons.delete,
                                     color: Colors.red),
@@ -259,13 +246,11 @@ class _AllOrdersScreenState extends State<AllOrdersScreen> {
                                       .delete();
                                 },
                               ),
-
-                              // ✅ إنهاء الطلب (يظهر فقط إذا الميزة مفعلة)
                               if (settings.completedEnabled)
                                 Checkbox(
                                   value: order.done,
                                   activeColor:
-                                  Theme.of(context).primaryColor,
+                                      Theme.of(context).primaryColor,
                                   onChanged: (val) async {
                                     if (val != null) {
                                       await FirebaseFirestore.instance

@@ -110,7 +110,7 @@ class AppTheme {
       ),
     ),
 
-    dialogTheme: const DialogTheme(
+    dialogTheme: const DialogThemeData(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(16)),
       ),
@@ -201,7 +201,7 @@ class AppTheme {
       ),
     ),
 
-    dialogTheme: const DialogTheme(
+    dialogTheme: const DialogThemeData(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(16)),
       ),

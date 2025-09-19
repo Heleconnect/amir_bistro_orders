@@ -55,17 +55,16 @@ class _NotesScreenState extends State<NotesScreen> {
               final notesProvider = Provider.of<NotesProvider>(context, listen: false);
 
               if (note == null) {
+                // 🟢 إضافة ملاحظة جديدة
                 notesProvider.addNote(
                   Note(content: _controller.text.trim(), orderId: 0),
                 );
                 UiHelper.showSnackBar(context, "✅ تم إضافة الملاحظة");
               } else {
+                // 🟢 تحديث ملاحظة موجودة
                 notesProvider.updateNote(
-                  Note(
-                    id: note.id,
-                    content: _controller.text.trim(),
-                    orderId: note.orderId,
-                  ),
+                  note,
+                  _controller.text.trim(),
                 );
                 UiHelper.showSnackBar(context, "✅ تم تعديل الملاحظة");
               }
@@ -93,53 +92,53 @@ class _NotesScreenState extends State<NotesScreen> {
         ),
         body: notesProvider.notes.isEmpty
             ? Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: const [
-              Icon(Icons.sticky_note_2, size: 80, color: Colors.grey),
-              SizedBox(height: 12),
-              Text(
-                "لا توجد ملاحظات بعد\nاضغط + لإضافة واحدة ✨",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-            ],
-          ),
-        )
-            : ListView.builder(
-          padding: const EdgeInsets.all(8),
-          itemCount: notesProvider.notes.length,
-          itemBuilder: (ctx, i) {
-            final note = notesProvider.notes[i];
-            return Card(
-              margin: const EdgeInsets.symmetric(vertical: 6),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 2,
-              child: ListTile(
-                leading: const Icon(Icons.note, color: Colors.blue),
-                title: Text(note.content),
-                trailing: Row(
+                child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.orange),
-                      onPressed: () => _showNoteDialog(note: note),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () {
-                        notesProvider.deleteNote(note.id!);
-                        UiHelper.showSnackBar(context, "🗑️ تم حذف الملاحظة");
-                      },
+                  children: const [
+                    Icon(Icons.sticky_note_2, size: 80, color: Colors.grey),
+                    SizedBox(height: 12),
+                    Text(
+                      "لا توجد ملاحظات بعد\nاضغط + لإضافة واحدة ✨",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
                     ),
                   ],
                 ),
+              )
+            : ListView.builder(
+                padding: const EdgeInsets.all(8),
+                itemCount: notesProvider.notes.length,
+                itemBuilder: (ctx, i) {
+                  final note = notesProvider.notes[i];
+                  return Card(
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 2,
+                    child: ListTile(
+                      leading: const Icon(Icons.note, color: Colors.blue),
+                      title: Text(note.content),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.orange),
+                            onPressed: () => _showNoteDialog(note: note),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () {
+                              notesProvider.deleteNote(note); // ✅ Note كامل
+                              UiHelper.showSnackBar(context, "🗑️ تم حذف الملاحظة");
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
-            );
-          },
-        ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () => _showNoteDialog(),
           icon: const Icon(Icons.add),

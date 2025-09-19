@@ -58,6 +58,45 @@ class SettingsProvider with ChangeNotifier {
   BluetoothDevice? get sharedPrinterDevice => _sharedPrinterDevice;
 
   // ======================
+  // 🔹 Setters للطابعات
+  // ======================
+  set kitchenPrinterDevice(BluetoothDevice? device) {
+    _kitchenPrinterDevice = device;
+    notifyListeners();
+    saveSettings();
+  }
+
+  set customerPrinterDevice(BluetoothDevice? device) {
+    _customerPrinterDevice = device;
+    notifyListeners();
+    saveSettings();
+  }
+
+  set sharedPrinterDevice(BluetoothDevice? device) {
+    _sharedPrinterDevice = device;
+    notifyListeners();
+    saveSettings();
+  }
+
+  set kitchenPrinterName(String? name) {
+    _kitchenPrinterName = name;
+    notifyListeners();
+    saveSettings();
+  }
+
+  set customerPrinterName(String? name) {
+    _customerPrinterName = name;
+    notifyListeners();
+    saveSettings();
+  }
+
+  set sharedPrinterName(String? name) {
+    _sharedPrinterName = name;
+    notifyListeners();
+    saveSettings();
+  }
+
+  // ======================
   // 🔹 تحميل الإعدادات
   // ======================
   Future<void> loadSettings() async {
@@ -147,7 +186,7 @@ class SettingsProvider with ChangeNotifier {
   }
 
   // ======================
-  // 🔹 Setters
+  // 🔹 Setters عامة
   // ======================
   void setRestaurantName(String name) { _restaurantName = name; notifyListeners(); saveSettings(); }
   void setRestaurantAddress(String address) { _restaurantAddress = address; notifyListeners(); saveSettings(); }
@@ -225,7 +264,6 @@ class SettingsProvider with ChangeNotifier {
       await printer.printNewLine();
       await printer.printCustom("شكراً لاستخدامك النظام ✅", 1, 1);
       await printer.printNewLine();
-      // ⚠️ بعض الطابعات لا تدعم القص
       try { await printer.paperCut(); } catch (_) {}
       return true;
     } catch (e) {

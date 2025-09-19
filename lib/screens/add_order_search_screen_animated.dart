@@ -1,8 +1,7 @@
-// lib/screens/add_order_search_screen_animated.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/item.dart';
-import '../models/order.dart';
+import '../models/order.dart' as app_models; // ✅ alias
 import '../providers/items_provider.dart';
 import '../providers/orders_provider.dart';
 import '../providers/settings_provider.dart';
@@ -22,7 +21,7 @@ class _AddOrderSearchScreenAnimatedState
     extends State<AddOrderSearchScreenAnimated>
     with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
-  final List<OrderItem> _orderItems = [];
+  final List<app_models.OrderItem> _orderItems = [];
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
 
   List<Item> _filteredItems = [];
@@ -42,15 +41,15 @@ class _AddOrderSearchScreenAnimatedState
       } else {
         _filteredItems = itemsProvider.items
             .where((item) =>
-        item.name.toLowerCase().contains(query.toLowerCase()) ||
-            item.id.toLowerCase().contains(query.toLowerCase()))
+                item.name.toLowerCase().contains(query.toLowerCase()) ||
+                item.id.toLowerCase().contains(query.toLowerCase()))
             .toList();
       }
     });
   }
 
   void _addItem(Item item) {
-    final orderItem = OrderItem(item: item, quantity: 1);
+    final orderItem = app_models.OrderItem(item: item, quantity: 1);
     _orderItems.add(orderItem);
     _listKey.currentState?.insertItem(
       _orderItems.length - 1,
@@ -62,7 +61,7 @@ class _AddOrderSearchScreenAnimatedState
     final removedItem = _orderItems.removeAt(index);
     _listKey.currentState?.removeItem(
       index,
-          (context, animation) =>
+      (context, animation) =>
           _buildOrderItemTile(removedItem, animation, removed: true),
       duration: const Duration(milliseconds: 300),
     );
@@ -80,9 +79,9 @@ class _AddOrderSearchScreenAnimatedState
 
     final ordersProvider = Provider.of<OrdersProvider>(context, listen: false);
     final settingsProvider =
-    Provider.of<SettingsProvider>(context, listen: false);
+        Provider.of<SettingsProvider>(context, listen: false);
 
-    final order = Order(
+    final order = app_models.Order(
       items: _orderItems,
       total: _orderItems.fold(
           0, (sum, e) => sum + e.item.price * e.quantity.toDouble()),
@@ -91,7 +90,6 @@ class _AddOrderSearchScreenAnimatedState
 
     await ordersProvider.addOrder(order);
 
-    // ✅ فواتير للطباعة
     final kitchenInvoice = {
       "id": order.number,
       "items": order.items.map((e) => e.toJson()).toList(),
@@ -113,7 +111,8 @@ class _AddOrderSearchScreenAnimatedState
     setState(() => _orderItems.clear());
   }
 
-  Widget _buildOrderItemTile(OrderItem orderItem, Animation<double> animation,
+  Widget _buildOrderItemTile(app_models.OrderItem orderItem,
+      Animation<double> animation,
       {bool removed = false}) {
     final curvedAnimation = CurvedAnimation(
       parent: animation,
@@ -131,7 +130,7 @@ class _AddOrderSearchScreenAnimatedState
             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             elevation: 3,
             shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: ListTile(
               title: Text(orderItem.item.name),
               subtitle: Text(
@@ -168,7 +167,6 @@ class _AddOrderSearchScreenAnimatedState
         appBar: AppBar(title: const Text("إضافة طلب (بحث مباشر)")),
         body: Column(
           children: [
-            // 🔎 مربع البحث
             Padding(
               padding: const EdgeInsets.all(12.0),
               child: TextField(
@@ -184,54 +182,49 @@ class _AddOrderSearchScreenAnimatedState
                   ),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      _searchController.clear();
-                      _searchItems('');
-                    },
-                  )
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            _searchItems('');
+                          },
+                        )
                       : null,
                 ),
                 onChanged: _searchItems,
               ),
             ),
-
-            // 📋 نتائج البحث
             Expanded(
               child: _filteredItems.isEmpty
                   ? const Center(
-                child: Text(
-                  "لا توجد أصناف مطابقة",
-                  style: TextStyle(fontSize: 16),
-                ),
-              )
-                  : ListView.builder(
-                itemCount: _filteredItems.length,
-                itemBuilder: (ctx, i) {
-                  final item = _filteredItems[i];
-                  return Card(
-                    margin: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
-                    child: ListTile(
-                      leading:
-                      const Icon(Icons.fastfood, color: Colors.indigo),
-                      title: Text(item.name),
-                      subtitle: Text(item.formattedPrice),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.add_circle,
-                            color: Colors.green),
-                        tooltip: "إضافة للطلب",
-                        onPressed: () => _addItem(item),
+                      child: Text(
+                        "لا توجد أصناف مطابقة",
+                        style: TextStyle(fontSize: 16),
                       ),
+                    )
+                  : ListView.builder(
+                      itemCount: _filteredItems.length,
+                      itemBuilder: (ctx, i) {
+                        final item = _filteredItems[i];
+                        return Card(
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          child: ListTile(
+                            leading:
+                                const Icon(Icons.fastfood, color: Colors.indigo),
+                            title: Text(item.name),
+                            subtitle: Text(item.formattedPrice),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.add_circle,
+                                  color: Colors.green),
+                              tooltip: "إضافة للطلب",
+                              onPressed: () => _addItem(item),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
             ),
-
             const Divider(),
-
-            // 📝 قائمة الطلب + زر حذف الكل
             Expanded(
               child: Column(
                 children: [
@@ -256,8 +249,6 @@ class _AddOrderSearchScreenAnimatedState
                 ],
               ),
             ),
-
-            // 💾 زر الحفظ والطباعة (مباشر)
             Padding(
               padding: const EdgeInsets.all(12.0),
               child: ElevatedButton.icon(

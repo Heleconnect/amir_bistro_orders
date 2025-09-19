@@ -130,6 +130,11 @@ class ItemsProvider with ChangeNotifier {
     } catch (_) {}
   }
 
+  /// ✅ alias لحل الخطأ بالشاشات (deleteItem = removeItem)
+  Future<void> deleteItem(String id) async {
+    return removeItem(id);
+  }
+
   Future<void> updateItem(Item updated) async {
     final index = _items.indexWhere((i) => i.id == updated.id);
     if (index >= 0) {
@@ -144,6 +149,11 @@ class ItemsProvider with ChangeNotifier {
         _pendingItems.add(updated);
       }
     }
+  }
+
+  /// ✅ جديد: إرجاع الأصناف حسب القسم
+  List<Item> itemsByCategory(String categoryId) {
+    return _items.where((i) => i.categoryId == categoryId).toList();
   }
 
   List<Item> filteredItems(String query) {

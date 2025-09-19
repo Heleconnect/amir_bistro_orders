@@ -1,10 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/order.dart';
+import '../models/order.dart' as app_models; // ✅ Alias
 
 class FirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Future<void> syncOrder(Order order) async {
+  Future<void> syncOrder(app_models.Order order) async { // ✅ استخدم alias
     await _firestore.collection('orders').doc(order.id.toString()).set({
       'id': order.id,
       'total': order.total,
