@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/settings_provider.dart';
+import '../utils/ui_helpers.dart';
 import 'connect_printer_screen.dart';
 import 'invoice_design_screen.dart';
 
@@ -40,19 +41,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
-  void _showSnack(BuildContext context, String msg, {bool error = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          msg,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: error ? Colors.red : Theme.of(context).primaryColor,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+  /// 📌 دالة لإغلاق الكيبورد
+  void _closeKeyboard(BuildContext context) {
+    FocusScope.of(context).unfocus();
   }
 
+  /// 🔹 كارد قسم الإعدادات
   Widget _buildSection({
     required IconData icon,
     required String title,
@@ -87,6 +81,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// 🔹 زر موحد بحجم كامل
+  Widget buildFullButton({
+    required VoidCallback onPressed,
+    required IconData icon,
+    required String label,
+    Color? color,
+    bool outlined = false,
+  }) {
+    if (outlined) {
+      return OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon),
+        label: Text(label),
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(double.infinity, 50),
+        ),
+      );
+    }
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon),
+      label: Text(label),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        minimumSize: const Size(double.infinity, 50),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
@@ -107,7 +130,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.store),
                 ),
-                onChanged: settings.setRestaurantName,
+                onChanged: (val) {
+                  settings.setRestaurantName(val);
+                  _closeKeyboard(context);
+                },
               ),
               const SizedBox(height: 12),
               TextField(
@@ -117,7 +143,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.location_on),
                 ),
-                onChanged: settings.setRestaurantAddress,
+                onChanged: (val) {
+                  settings.setRestaurantAddress(val);
+                  _closeKeyboard(context);
+                },
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
@@ -132,7 +161,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onChanged: (val) {
                   if (val != null) {
                     settings.setCurrency(val);
-                    _showSnack(context, "تم تغيير العملة إلى $val ✅");
+                    _closeKeyboard(context);
+                    UiHelper.showSnackBar(context, "تم تغيير العملة إلى $val ✅");
                   }
                 },
               ),
@@ -170,7 +200,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onChanged: (val) {
                   if (val != null) {
                     settings.setFontFamily(val);
-                    _showSnack(context, "تم تغيير الخط ✅");
+                    _closeKeyboard(context);
+                    UiHelper.showSnackBar(context, "تم تغيير الخط ✅");
                   }
                 },
               ),
@@ -183,48 +214,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   prefixIcon: Icon(Icons.favorite),
                 ),
                 maxLines: 2,
-                onChanged: settings.setThankYouMessage,
+                onChanged: (val) {
+                  settings.setThankYouMessage(val);
+                  _closeKeyboard(context);
+                },
               ),
             ]),
 
             // 🖨️ الطابعات
             _buildSection(icon: Icons.print, title: "🖨️ الطابعات", children: [
-              ElevatedButton.icon(
+              buildFullButton(
                 onPressed: () {
                   Navigator.pushNamed(context, ConnectPrinterScreen.routeName);
                 },
-                icon: const Icon(Icons.print),
-                label: const Text("إدارة الطابعات"),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),
-                ),
+                icon: Icons.print,
+                label: "إدارة الطابعات",
               ),
               const SizedBox(height: 12),
-              ElevatedButton.icon(
+              buildFullButton(
                 onPressed: () async {
                   final success = await settings.printTestPage();
-                  _showSnack(context,
-                      success ? "✅ تمت طباعة صفحة اختبار" : "⚠️ فشل الطباعة");
+                  _closeKeyboard(context);
+                  if (!success) {
+                    UiHelper.showSnackBar(
+                      context,
+                      "⚠️ لم يتم العثور على طابعة متصلة",
+                      warning: true,
+                    );
+                  } else {
+                    UiHelper.showSnackBar(context, "✅ تمت طباعة صفحة اختبار");
+                  }
                 },
-                icon: const Icon(Icons.print_outlined),
-                label: const Text("تجربة الطابعة"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  minimumSize: const Size(double.infinity, 50),
-                ),
+                icon: Icons.print_outlined,
+                label: "تجربة الطابعة",
+                color: Colors.green,
               ),
               const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: () {
-                  settings.resetPrinters();
-                  _showSnack(context, "🖨️ تم مسح إعدادات الطابعات");
+              buildFullButton(
+                onPressed: () async {
+                  final confirm = await UiHelper.showConfirmDialog(
+                    context,
+                    title: "تأكيد العملية",
+                    message: "هل تريد تصفير الطابعات؟",
+                    isDestructive: true,
+                  );
+                  if (confirm == true) {
+                    settings.resetPrinters();
+                    _closeKeyboard(context);
+                    UiHelper.showSnackBar(context, "🖨️ تم مسح إعدادات الطابعات");
+                  }
                 },
-                icon: const Icon(Icons.clear_all),
-                label: const Text("تصفير الطابعات"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orangeAccent,
-                  minimumSize: const Size(double.infinity, 50),
-                ),
+                icon: Icons.clear_all,
+                label: "تصفير الطابعات",
+                color: Colors.orangeAccent,
               ),
             ]),
 
@@ -233,15 +275,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               icon: Icons.receipt_long,
               title: "🧾 تصميم الفاتورة",
               children: [
-                ElevatedButton.icon(
+                buildFullButton(
                   onPressed: () {
                     Navigator.pushNamed(context, InvoiceDesignScreen.routeName);
                   },
-                  icon: const Icon(Icons.receipt_long),
-                  label: const Text("تخصيص تصميم الفاتورة"),
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 50),
-                  ),
+                  icon: Icons.receipt_long,
+                  label: "تخصيص تصميم الفاتورة",
                 ),
               ],
             ),
@@ -254,43 +293,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 value: settings.completedEnabled,
                 onChanged: (val) {
                   settings.setCompletedEnabled(val);
-                  _showSnack(context,
-                      val ? "✅ تم تفعيل خيار منجز" : "⛔️ تم إلغاء خيار منجز");
+                  _closeKeyboard(context);
+                  UiHelper.showSnackBar(
+                    context,
+                    val ? "✅ تم تفعيل خيار منجز" : "⛔️ تم إلغاء خيار منجز",
+                    warning: !val,
+                  );
                 },
               ),
               const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: () {
-                  settings.resetOrderCounter();
-                  _showSnack(context, "✅ تم تصفير عداد الطلبات");
+              buildFullButton(
+                onPressed: () async {
+                  final confirm = await UiHelper.showConfirmDialog(
+                    context,
+                    title: "تأكيد العملية",
+                    message: "هل تريد تصفير عداد الطلبات؟",
+                    isDestructive: true,
+                  );
+                  if (confirm == true) {
+                    settings.resetOrderCounter();
+                    _closeKeyboard(context);
+                    UiHelper.showSnackBar(context, "✅ تم تصفير عداد الطلبات");
+                  }
                 },
-                icon: const Icon(Icons.refresh),
-                label: const Text("تصفير عداد الطلبات"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  minimumSize: const Size(double.infinity, 50),
-                ),
+                icon: Icons.refresh,
+                label: "تصفير عداد الطلبات",
+                color: Colors.redAccent,
               ),
             ]),
 
             // 🔄 إعادة ضبط
             _buildSection(icon: Icons.restore, title: "🔄 إعادة ضبط", children: [
-              OutlinedButton.icon(
-                onPressed: () {
-                  settings.resetToDefaults();
-                  setState(() {
-                    _restaurantNameController.text = settings.restaurantName;
-                    _restaurantAddressController.text =
-                        settings.restaurantAddress;
-                    _thankYouController.text = settings.thankYouMessage;
-                  });
-                  _showSnack(context, "تمت إعادة الإعدادات الافتراضية ✅");
+              buildFullButton(
+                onPressed: () async {
+                  final confirm = await UiHelper.showConfirmDialog(
+                    context,
+                    title: "تأكيد العملية",
+                    message: "هل تريد إعادة الإعدادات الافتراضية؟",
+                    isDestructive: true,
+                  );
+                  if (confirm == true) {
+                    settings.resetToDefaults();
+                    setState(() {
+                      _restaurantNameController.text = settings.restaurantName;
+                      _restaurantAddressController.text =
+                          settings.restaurantAddress;
+                      _thankYouController.text = settings.thankYouMessage;
+                    });
+                    _closeKeyboard(context);
+                    UiHelper.showSnackBar(
+                        context, "تمت إعادة الإعدادات الافتراضية ✅");
+                  }
                 },
-                icon: const Icon(Icons.restore),
-                label: const Text("إعادة الإعدادات الافتراضية"),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),
-                ),
+                icon: Icons.restore,
+                label: "إعادة الإعدادات الافتراضية",
+                outlined: true,
               ),
             ]),
           ],

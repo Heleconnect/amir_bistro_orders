@@ -13,35 +13,45 @@ class PrintingService {
 
   PrintingService({required this.settings});
 
-  BluetoothDevice? get _kitchenDevice => settings.kitchenPrinter;
-  BluetoothDevice? get _customerDevice => settings.customerPrinter;
-  BluetoothDevice? get _sharedDevice => settings.sharedPrinter;
+  // مراجع أجهزة الطابعات من الإعدادات
+  BluetoothDevice? get _kitchenDevice => settings.kitchenPrinterDevice;
+  BluetoothDevice? get _customerDevice => settings.customerPrinterDevice;
+  BluetoothDevice? get _sharedDevice => settings.sharedPrinterDevice;
 
-  /// ===== الاتصال بالطابعة =====
-  Future<bool> connectPrinter(BluetoothDevice device, PrinterType type) async {
+  /// ✅ دالة موحدة للتأكد من الاتصال
+  Future<bool> _ensureConnected(BluetoothDevice device) async {
     try {
       final isConnected = await _bluetooth.isConnected ?? false;
       if (!isConnected) {
         await _bluetooth.connect(device);
       }
-
-      switch (type) {
-        case PrinterType.kitchen:
-          settings.setKitchenPrinter(device);
-          break;
-        case PrinterType.customer:
-          settings.setCustomerPrinter(device);
-          break;
-        case PrinterType.shared:
-          settings.setSharedPrinter(device);
-          break;
-      }
-
       return true;
     } catch (e) {
-      debugPrint("⚠️ خطأ عند الاتصال بالطابعة: $e");
+      debugPrint("⚠️ فشل الاتصال بالطابعة: $e");
       return false;
     }
+  }
+
+  /// ===== الاتصال بالطابعة =====
+  Future<bool> connectPrinter(BluetoothDevice device, PrinterType type) async {
+    if (!await _ensureConnected(device)) return false;
+
+    // خزّن الجهاز والاسم حسب النوع
+    switch (type) {
+      case PrinterType.kitchen:
+        settings.kitchenPrinterDevice = device;
+        settings.kitchenPrinterName = device.name;
+        break;
+      case PrinterType.customer:
+        settings.customerPrinterDevice = device;
+        settings.customerPrinterName = device.name;
+        break;
+      case PrinterType.shared:
+        settings.sharedPrinterDevice = device;
+        settings.sharedPrinterName = device.name;
+        break;
+    }
+    return true;
   }
 
   /// ===== طباعة اختبارية =====
@@ -53,33 +63,28 @@ class PrintingService {
     };
 
     if (device == null) return;
+    if (!await _ensureConnected(device)) return;
+
+    _bluetooth.printNewLine();
+    _bluetooth.printCustom(
+      switch (type) {
+        PrinterType.kitchen => "=== اختبار طابعة المطبخ ===",
+        PrinterType.customer => "=== اختبار طابعة الزبون ===",
+        PrinterType.shared => "=== اختبار الطابعة المشتركة ===",
+      },
+      2,
+      1,
+    );
+    _bluetooth.printNewLine();
+    _bluetooth.printCustom("تم الاتصال بنجاح ✅", 1, 1);
+    _bluetooth.printNewLine();
 
     try {
-      final isConnected = await _bluetooth.isConnected ?? false;
-      if (!isConnected) await _bluetooth.connect(device);
-
-      _bluetooth.printNewLine();
-      _bluetooth.printCustom(
-        switch (type) {
-          PrinterType.kitchen => "=== اختبار طابعة المطبخ ===",
-          PrinterType.customer => "=== اختبار طابعة الزبون ===",
-          PrinterType.shared => "=== اختبار الطابعة المشتركة ===",
-        },
-        2,
-        1,
-      );
-      _bluetooth.printNewLine();
-      _bluetooth.printCustom("تم الاتصال بنجاح ✅", 1, 1);
-      _bluetooth.printNewLine();
-      try {
-        await _bluetooth.paperCut();
-      } catch (_) {}
-    } catch (e) {
-      debugPrint("⚠️ فشل في الطباعة التجريبية: $e");
-    }
+      await _bluetooth.paperCut();
+    } catch (_) {}
   }
 
-  /// ===== طباعة الطلب مباشرة =====
+  /// ===== طباعة الطلب مباشرة (نصي) =====
   Future<void> _printDirect(Map<String, dynamic> order, PrinterType type) async {
     final device = switch (type) {
       PrinterType.kitchen => _kitchenDevice,
@@ -88,56 +93,54 @@ class PrintingService {
     };
 
     if (device == null) return;
+    if (!await _ensureConnected(device)) return;
 
-    try {
-      final isConnected = await _bluetooth.isConnected ?? false;
-      if (!isConnected) await _bluetooth.connect(device);
+    _bluetooth.printNewLine();
 
+    if (type == PrinterType.kitchen) {
+      // ✅ فاتورة المطبخ
+      _bluetooth.printCustom("=== فاتورة المطبخ ===", 2, 1);
+      _bluetooth.printNewLine();
+      _bluetooth.printCustom("رقم الطلب: ${order['id']}", 1, 0);
       _bluetooth.printNewLine();
 
-      if (type == PrinterType.kitchen) {
-        _bluetooth.printCustom("=== فاتورة المطبخ ===", 2, 1);
-        _bluetooth.printCustom("رقم الطلب: ${order['id']}", 1, 0);
-
-        if (order['items'] != null) {
-          for (var item in order['items']) {
-            final notes = (item['notes'] is List && item['notes'].isNotEmpty)
-                ? " (${(item['notes'] as List).join(', ')})"
-                : "";
-            _bluetooth.printCustom(
-                "${item['name']} ×${item['quantity']}$notes", 1, 0);
-          }
+      if (order['items'] != null) {
+        for (final item in (order['items'] as List)) {
+          final notes = (item['notes'] is List && (item['notes'] as List).isNotEmpty)
+              ? " (${(item['notes'] as List).join(', ')})"
+              : "";
+          _bluetooth.printCustom("${item['name']} ×${item['quantity']}$notes", 1, 0);
         }
-
-        _bluetooth.printCustom(
-            "الإجمالي: ${order['total']} ${settings.currency}", 2, 1);
-      } else if (type == PrinterType.customer) {
-        _bluetooth.printCustom("=== فاتورة الزبون ===", 2, 1);
-        _bluetooth.printCustom("رقم الطلب: ${order['id']}", 1, 1);
-        _bluetooth.printCustom(
-            "الإجمالي: ${order['total']} ${settings.currency}", 2, 1);
-        _bluetooth.printCustom(settings.thankYouMessage, 1, 1);
       }
 
-      try {
-        await _bluetooth.paperCut();
-      } catch (_) {}
-    } catch (e) {
-      debugPrint("⚠️ فشل في الطباعة: $e");
+      _bluetooth.printNewLine();
+      _bluetooth.printCustom("الإجمالي: ${order['total']} ${settings.currency}", 2, 1);
+    } else if (type == PrinterType.customer) {
+      // ✅ فاتورة الزبون
+      _bluetooth.printCustom("=== فاتورة الزبون ===", 2, 1);
+      _bluetooth.printNewLine();
+      _bluetooth.printCustom("رقم الطلب: ${order['id']}", 1, 1);
+      _bluetooth.printNewLine();
+      _bluetooth.printCustom("الإجمالي: ${order['total']} ${settings.currency}", 2, 1);
+      _bluetooth.printNewLine();
+      _bluetooth.printCustom(settings.thankYouMessage, 1, 1);
     }
+
+    _bluetooth.printNewLine();
+    try {
+      await _bluetooth.paperCut();
+    } catch (_) {}
   }
 
   /// ===== طباعة PDF =====
   Future<void> printPdf(Uint8List pdfData, {BluetoothDevice? device}) async {
     try {
-      if (device != null) {
-        final isConnected = await _bluetooth.isConnected ?? false;
-        if (!isConnected) await _bluetooth.connect(device);
+      if (device != null && await _ensureConnected(device)) {
+        await Printing.layoutPdf(
+          onLayout: (format) async => pdfData,
+          format: PdfPageFormat(80 * PdfPageFormat.mm, double.infinity),
+        );
       }
-      await Printing.layoutPdf(
-        onLayout: (format) async => pdfData,
-        format: PdfPageFormat(80 * PdfPageFormat.mm, double.infinity),
-      );
     } catch (e) {
       debugPrint("⚠️ خطأ أثناء طباعة PDF: $e");
     }
@@ -145,8 +148,9 @@ class PrintingService {
 
   /// ===== طباعة ذكية (مطبخ + زبون) =====
   Future<void> ensurePrinterAndPrint(
-      Map<String, dynamic> kitchenInvoice,
-      Map<String, dynamic> customerInvoice) async {
+    Map<String, dynamic> kitchenInvoice,
+    Map<String, dynamic> customerInvoice,
+  ) async {
     if (_sharedDevice != null) {
       await _printDirect(kitchenInvoice, PrinterType.shared);
       await _printDirect(customerInvoice, PrinterType.shared);
@@ -158,6 +162,7 @@ class PrintingService {
       await _printDirect(customerInvoice, PrinterType.kitchen);
       return;
     }
+
     if (_customerDevice != null && _kitchenDevice == null) {
       await _printDirect(kitchenInvoice, PrinterType.customer);
       await _printDirect(customerInvoice, PrinterType.customer);

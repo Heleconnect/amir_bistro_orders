@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'package:amir_bistro_orders/main.dart';
 import 'package:amir_bistro_orders/providers/settings_provider.dart';
+import 'package:amir_bistro_orders/screens/home_screen.dart'; // ✅ إضافة مهمة
 
 void main() {
   testWidgets('App smoke test', (WidgetTester tester) async {
@@ -26,7 +27,7 @@ void main() {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const CircularProgressIndicator();
                   }
-                  return const HomeScreen();
+                  return const HomeScreen(); // ✅ صار معرف
                 },
               );
             },

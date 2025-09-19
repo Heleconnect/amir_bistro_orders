@@ -57,15 +57,18 @@ class _CategoriesTab extends StatelessWidget {
                   itemBuilder: (ctx, i) {
                     final category = categories[i];
                     return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       child: ListTile(
-                        leading: const Icon(Icons.category, color: Colors.blue),
+                        leading:
+                            const Icon(Icons.category, color: Colors.blue),
                         title: Text(category.name),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.orange),
+                              icon: const Icon(Icons.edit,
+                                  color: Colors.orange),
                               onPressed: () => _showCategoryDialog(
                                 context,
                                 itemsProvider,
@@ -73,7 +76,8 @@ class _CategoriesTab extends StatelessWidget {
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
+                              icon: const Icon(Icons.delete,
+                                  color: Colors.red),
                               onPressed: () {
                                 itemsProvider.deleteCategory(category.id);
                               },
@@ -88,10 +92,12 @@ class _CategoriesTab extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.all(12.0),
           child: ElevatedButton.icon(
-            onPressed: () => _showCategoryDialog(context, itemsProvider, category: null),
+            onPressed: () => _showCategoryDialog(context, itemsProvider,
+                category: null),
             icon: const Icon(Icons.add),
             label: const Text("إضافة قسم جديد"),
-            style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
+            style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50)),
           ),
         ),
       ],
@@ -99,16 +105,17 @@ class _CategoriesTab extends StatelessWidget {
   }
 
   Future<void> _showCategoryDialog(
-      BuildContext context,
-      ItemsProvider provider, {
-        Category? category,
-      }) async {
+    BuildContext context,
+    ItemsProvider provider, {
+    Category? category,
+  }) async {
     final controller = TextEditingController(text: category?.name ?? "");
 
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text(category == null ? "➕ إضافة قسم" : "✏️ تعديل القسم"),
         content: TextField(
           controller: controller,
@@ -127,7 +134,12 @@ class _CategoriesTab extends StatelessWidget {
               if (controller.text.trim().isEmpty) return;
 
               if (category == null) {
-                provider.addCategory(controller.text.trim());
+                provider.addCategory(Category(
+                  id: DateTime.now()
+                      .millisecondsSinceEpoch
+                      .toString(),
+                  name: controller.text.trim(),
+                ));
               } else {
                 provider.updateCategory(Category(
                   id: category.id,
@@ -166,21 +178,26 @@ class _ItemsTab extends StatelessWidget {
                   itemBuilder: (ctx, i) {
                     final item = items[i];
                     final category = categories.firstWhere(
-                          (c) => c.id == item.categoryId,
-                      orElse: () => Category(id: "?", name: "غير معروف"),
+                      (c) => c.id == item.categoryId,
+                      orElse: () =>
+                          Category(id: "?", name: "غير معروف"),
                     );
 
                     return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       child: ListTile(
-                        leading: const Icon(Icons.fastfood, color: Colors.green),
+                        leading: const Icon(Icons.fastfood,
+                            color: Colors.green),
                         title: Text(item.name),
-                        subtitle: Text("${item.price.toStringAsFixed(2)} ${settings.currency} • قسم: ${category.name}"),
+                        subtitle: Text(
+                            "${item.price.toStringAsFixed(2)} ${settings.currency} • قسم: ${category.name}"),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.orange),
+                              icon: const Icon(Icons.edit,
+                                  color: Colors.orange),
                               onPressed: () => _showItemDialog(
                                 context,
                                 itemsProvider,
@@ -188,7 +205,8 @@ class _ItemsTab extends StatelessWidget {
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
+                              icon: const Icon(Icons.delete,
+                                  color: Colors.red),
                               onPressed: () {
                                 itemsProvider.deleteItem(item.id);
                               },
@@ -209,7 +227,8 @@ class _ItemsTab extends StatelessWidget {
             },
             icon: const Icon(Icons.add),
             label: const Text("إضافة صنف جديد"),
-            style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
+            style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50)),
           ),
         ),
       ],
@@ -217,18 +236,20 @@ class _ItemsTab extends StatelessWidget {
   }
 
   Future<void> _showItemDialog(
-      BuildContext context,
-      ItemsProvider provider, {
-        Item? item,
-      }) async {
+    BuildContext context,
+    ItemsProvider provider, {
+    Item? item,
+  }) async {
     final nameController = TextEditingController(text: item?.name ?? "");
-    final priceController = TextEditingController(text: item?.price.toString() ?? "");
+    final priceController =
+        TextEditingController(text: item?.price.toString() ?? "");
     String? selectedCategoryId = item?.categoryId;
 
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text(item == null ? "➕ إضافة صنف" : "✏️ تعديل الصنف"),
         content: SingleChildScrollView(
           child: Column(
@@ -243,7 +264,8 @@ class _ItemsTab extends StatelessWidget {
               const SizedBox(height: 8),
               TextField(
                 controller: priceController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
                   labelText: "السعر",
                   border: OutlineInputBorder(),
@@ -257,7 +279,8 @@ class _ItemsTab extends StatelessWidget {
                   border: OutlineInputBorder(),
                 ),
                 items: provider.categories.map((c) {
-                  return DropdownMenuItem(value: c.id, child: Text(c.name));
+                  return DropdownMenuItem(
+                      value: c.id, child: Text(c.name));
                 }).toList(),
                 onChanged: (val) => selectedCategoryId = val,
               ),
@@ -278,11 +301,14 @@ class _ItemsTab extends StatelessWidget {
               }
 
               if (item == null) {
-                provider.addItem(
-                  nameController.text.trim(),
-                  double.parse(priceController.text),
-                  selectedCategoryId!,
-                );
+                provider.addItem(Item(
+                  id: DateTime.now()
+                      .millisecondsSinceEpoch
+                      .toString(),
+                  name: nameController.text.trim(),
+                  price: double.parse(priceController.text),
+                  categoryId: selectedCategoryId!,
+                ));
               } else {
                 provider.updateItem(Item(
                   id: item.id,

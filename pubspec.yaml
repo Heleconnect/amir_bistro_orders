@@ -12,11 +12,10 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.2
 
-  # ================== 📌 إدارة الحالة ==================
+  # 📌 إدارة الحالة
   provider: ^6.1.5
-  # flutter_riverpod: ^2.5.1   # 🔹 احذفها إذا مو مستخدمها
 
-  # ================== 📌 Firebase ==================
+  # 📌 Firebase
   firebase_core: ^2.24.2
   cloud_firestore: ^4.17.5
   firebase_auth: ^4.19.6
@@ -24,53 +23,50 @@ dependencies:
   firebase_messaging: ^14.9.4
   firebase_crashlytics: ^3.5.7
 
-  # ================== 📌 SQLite والتخزين المحلي ==================
+  # 📌 SQLite والتخزين المحلي
   sqflite: ^2.3.3+1
   path: ^1.9.0
   path_provider: ^2.1.5
   shared_preferences: ^2.3.3
 
-  # ================== 📌 PDF والطباعة ==================
+  # 📌 PDF والطباعة
   pdf: ^3.11.1
   printing: ^5.13.1
-  # pdfium: ^1.8.0   # 🔹 بس إذا بدك تعرض PDF داخل التطبيق
 
-  # ================== 📌 الطباعة الحرارية ==================
+  # 📌 الطباعة الحرارية (Bluetooth)
   blue_thermal_printer: ^1.2.3
-  # esc_pos_printer: ^0.3.8   # 🔹 أضفها فقط إذا بدك دعم LAN/WiFi
-  # ملاحظة: إذا عم تستخدم Bluetooth فقط → احذفها نهائياً
 
-  # ================== 📌 QR Code ==================
+  # 📌 QR Code
   qr_flutter: ^4.1.0
   mobile_scanner: ^2.1.0
   barcode_widget: ^2.0.0
 
-  # ================== 📌 التواريخ واللغات ==================
+  # 📌 التواريخ واللغات
   intl: ^0.20.2
   flutter_localizations:
     sdk: flutter
 
-  # ================== 📌 HTTP و Networking ==================
+  # 📌 Networking
   http: ^1.2.2
   dio: ^5.7.0
   connectivity_plus: ^5.0.2
 
-  # ================== 📌 الأدوات المساعدة ==================
+  # 📌 Utilities
   collection: ^1.18.0
   crypto: ^3.0.3
   equatable: ^2.0.5
   get_it: ^7.7.0
   logger: ^2.3.0
 
-  # ================== 📌 UI و Animations ==================
+  # 📌 UI & Animations
   flutter_svg: ^2.0.10+1
   lottie: ^3.1.2
   shimmer: ^3.0.0
   badges: ^3.1.2
   flutter_typeahead: ^5.2.0
 
-  # ================== 📌 الإذونات ==================
-  permission_handler: ^11.3.1
+  # 📌 الأذونات
+  permission_handler: ^11.4.0
   location: ^6.0.2
 
 dev_dependencies:
@@ -99,6 +95,6 @@ flutter:
         - asset: assets/fonts/Cairo-Light.ttf
           weight: 300
 
-# ================== 📌 إعدادات الترجمة ==================
+# 📌 إعدادات الترجمة
 flutter_intl:
   enabled: true

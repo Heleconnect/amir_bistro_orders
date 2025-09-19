@@ -10,7 +10,7 @@ class SettingsProvider with ChangeNotifier {
   // 🔹 إعدادات عامة
   // ======================
   bool _completedEnabled = true;
-  int _orderCounter = 0;
+  int _orderCounter = 1; // ✅ يبدأ من 1 بدل 0
   String _restaurantName = "AMIR BISTRO";
   String _restaurantAddress = "Neustadt 47, 24939 Flensburg";
   double _fontSize = 14.0;
@@ -122,7 +122,9 @@ class SettingsProvider with ChangeNotifier {
     // ✅ استماع مباشر لتغييرات Firebase
     _firestore.collection("settings").doc("main").snapshots().listen((doc) {
       if (!doc.exists) return;
-      final data = doc.data()!;
+      final data = doc.data();
+      if (data == null) return;
+
       _restaurantName = data["restaurantName"] ?? _restaurantName;
       _restaurantAddress = data["restaurantAddress"] ?? _restaurantAddress;
       _fontSize = (data["fontSize"] ?? _fontSize).toDouble();
@@ -158,9 +160,15 @@ class SettingsProvider with ChangeNotifier {
     await prefs.setString("currency", _currency);
     await prefs.setString("thankYouMessage", _thankYouMessage);
 
-    if (_kitchenPrinterName != null) prefs.setString("kitchenPrinterName", _kitchenPrinterName!);
-    if (_customerPrinterName != null) prefs.setString("customerPrinterName", _customerPrinterName!);
-    if (_sharedPrinterName != null) prefs.setString("sharedPrinterName", _sharedPrinterName!);
+    if (_kitchenPrinterName != null) {
+      await prefs.setString("kitchenPrinterName", _kitchenPrinterName!);
+    }
+    if (_customerPrinterName != null) {
+      await prefs.setString("customerPrinterName", _customerPrinterName!);
+    }
+    if (_sharedPrinterName != null) {
+      await prefs.setString("sharedPrinterName", _sharedPrinterName!);
+    }
 
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(seconds: 3), () async {
@@ -196,7 +204,7 @@ class SettingsProvider with ChangeNotifier {
   void setCurrency(String value) { _currency = value; notifyListeners(); saveSettings(); }
   void setThankYouMessage(String message) { _thankYouMessage = message; notifyListeners(); saveSettings(); }
   void setCompletedEnabled(bool value) { _completedEnabled = value; notifyListeners(); saveSettings(); }
-  void resetOrderCounter() { _orderCounter = 0; notifyListeners(); saveSettings(); }
+  void resetOrderCounter() { _orderCounter = 1; notifyListeners(); saveSettings(); } // ✅ يبدأ من 1
 
   // ======================
   // 🔹 Reset
@@ -210,7 +218,7 @@ class SettingsProvider with ChangeNotifier {
     _thankYouMessage = "شكراً لتعاملكم معنا ❤️";
     _showNotes = true;
     _completedEnabled = true;
-    _orderCounter = 0;
+    _orderCounter = 1; // ✅ بدل 0
 
     _kitchenPrinterName = null;
     _customerPrinterName = null;
@@ -227,15 +235,19 @@ class SettingsProvider with ChangeNotifier {
   // 🔹 Printers
   // ======================
   Future<void> _reconnectPrinters() async {
-    final devices = await BlueThermalPrinter.instance.getBondedDevices();
-    if (_kitchenPrinterName != null) {
-      _kitchenPrinterDevice = devices.firstWhereOrNull((d) => d.name == _kitchenPrinterName);
-    }
-    if (_customerPrinterName != null) {
-      _customerPrinterDevice = devices.firstWhereOrNull((d) => d.name == _customerPrinterName);
-    }
-    if (_sharedPrinterName != null) {
-      _sharedPrinterDevice = devices.firstWhereOrNull((d) => d.name == _sharedPrinterName);
+    try {
+      final devices = await BlueThermalPrinter.instance.getBondedDevices();
+      if (_kitchenPrinterName != null) {
+        _kitchenPrinterDevice = devices.firstWhereOrNull((d) => d.name == _kitchenPrinterName);
+      }
+      if (_customerPrinterName != null) {
+        _customerPrinterDevice = devices.firstWhereOrNull((d) => d.name == _customerPrinterName);
+      }
+      if (_sharedPrinterName != null) {
+        _sharedPrinterDevice = devices.firstWhereOrNull((d) => d.name == _sharedPrinterName);
+      }
+    } catch (e) {
+      debugPrint("⚠️ فشل في إعادة ربط الطابعات: $e");
     }
   }
 
@@ -256,7 +268,9 @@ class SettingsProvider with ChangeNotifier {
       final device = _sharedPrinterDevice ?? _customerPrinterDevice ?? _kitchenPrinterDevice;
       if (device == null) return false;
 
+      await printer.disconnect(); // ✅ تأكد من قطع الاتصال قبل إعادة التوصيل
       await printer.connect(device);
+
       await printer.printNewLine();
       await printer.printCustom("=== صفحة اختبار ===", 2, 1);
       await printer.printCustom(_restaurantName, 1, 1);

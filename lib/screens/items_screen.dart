@@ -25,14 +25,14 @@ class _ItemsScreenState extends State<ItemsScreen> {
   void _showItemDialog({Item? item, required String categoryId}) {
     final nameController = TextEditingController(text: item?.name ?? '');
     final priceController =
-    TextEditingController(text: item?.price.toString() ?? '');
+        TextEditingController(text: item?.price.toString() ?? '');
 
     showDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
           shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
             children: [
               Icon(
@@ -57,7 +57,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
               TextField(
                 controller: priceController,
                 keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+                    const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
                   labelText: "السعر",
                   border: OutlineInputBorder(),
@@ -86,7 +86,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                 );
 
                 final provider =
-                Provider.of<ItemsProvider>(context, listen: false);
+                    Provider.of<ItemsProvider>(context, listen: false);
                 if (item == null) {
                   provider.addItem(newItem);
                 } else {
@@ -111,7 +111,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
       builder: (ctx) {
         return AlertDialog(
           shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
             children: [
               Icon(
@@ -147,7 +147,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                 );
 
                 final provider =
-                Provider.of<ItemsProvider>(context, listen: false);
+                    Provider.of<ItemsProvider>(context, listen: false);
                 if (category == null) {
                   provider.addCategory(newCategory);
                 } else {
@@ -184,77 +184,75 @@ class _ItemsScreenState extends State<ItemsScreen> {
         ),
         body: itemsProvider.categories.isEmpty
             ? const Center(
-          child: Text("لا توجد أقسام بعد، أضف قسم جديد ✨"),
-        )
+                child: Text("لا توجد أقسام بعد، أضف قسم جديد ✨"),
+              )
             : ListView.builder(
-          itemCount: itemsProvider.categories.length,
-          itemBuilder: (ctx, i) {
-            final category = itemsProvider.categories[i];
-            final items = itemsProvider.itemsByCategory(category.id);
+                itemCount: itemsProvider.categories.length,
+                itemBuilder: (ctx, i) {
+                  final category = itemsProvider.categories[i];
+                  final items = itemsProvider.itemsByCategory(category.id);
 
-            return Card(
-              margin: const EdgeInsets.all(8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 3,
-              child: ExpansionTile(
-                leading:
-                const Icon(Icons.category, color: Colors.orange),
-                title: Text(
-                  category.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-                children: [
-                  if (items.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: Text("لا توجد أصناف في هذا القسم"),
+                  return Card(
+                    margin: const EdgeInsets.all(8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ...items.map((item) {
-                    return ListTile(
-                      title: Text(item.name),
-                      subtitle:
-                      Text(item.formattedPrice(settings.currency)),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit,
-                                color: Colors.orange),
-                            onPressed: () => _showItemDialog(
-                              item: item,
-                              categoryId: category.id,
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete,
-                                color: Colors.red),
-                            onPressed: () {
-                              itemsProvider.deleteItem(item.id);
-                            },
-                          ),
-                        ],
+                    elevation: 3,
+                    child: ExpansionTile(
+                      leading:
+                          const Icon(Icons.category, color: Colors.orange),
+                      title: Text(
+                        category.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
                       ),
-                    );
-                  }),
-                  ListTile(
-                    leading:
-                    const Icon(Icons.add, color: Colors.blue),
-                    title: const Text("إضافة صنف جديد"),
-                    onTap: () => _showItemDialog(
-                      categoryId: category.id,
+                      children: [
+                        if (items.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Text("لا توجد أصناف في هذا القسم"),
+                          ),
+                        ...items.map((item) {
+                          return ListTile(
+                            title: Text(item.name),
+                            subtitle: Text(item.formattedPrice),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit,
+                                      color: Colors.orange),
+                                  onPressed: () => _showItemDialog(
+                                    item: item,
+                                    categoryId: category.id,
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.red),
+                                  onPressed: () {
+                                    itemsProvider.deleteItem(item.id);
+                                  },
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                        ListTile(
+                          leading: const Icon(Icons.add, color: Colors.blue),
+                          title: const Text("إضافة صنف جديد"),
+                          onTap: () => _showItemDialog(
+                            categoryId: category.id,
+                          ),
+                        ),
+                        const Divider(),
+                      ],
                     ),
-                  ),
-                  const Divider(),
-                ],
+                  );
+                },
               ),
-            );
-          },
-        ),
       ),
     );
   }

@@ -13,11 +13,11 @@ class Item {
 
   // ✅ JSON
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'price': price,
-    'categoryId': categoryId,
-  };
+        'id': id,
+        'name': name,
+        'price': price,
+        'categoryId': categoryId,
+      };
 
   factory Item.fromJson(Map<String, dynamic> json) {
     return Item(
@@ -32,11 +32,11 @@ class Item {
 
   // ✅ SQLite Map
   Map<String, dynamic> toMap() => {
-    'id': id,
-    'name': name,
-    'price': price,
-    'categoryId': categoryId,
-  };
+        'id': id,
+        'name': name,
+        'price': price,
+        'categoryId': categoryId,
+      };
 
   factory Item.fromMap(Map<String, dynamic> map) {
     return Item(
@@ -49,9 +49,8 @@ class Item {
     );
   }
 
-  // ✅ عرض السعر بالعملة
-  String formattedPrice(String currency) =>
-      "${price.toStringAsFixed(2)} $currency";
+  // ✅ عرض السعر باليورو مباشرة
+  String get formattedPrice => "${price.toStringAsFixed(2)} €";
 
   @override
   String toString() =>

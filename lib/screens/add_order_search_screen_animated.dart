@@ -39,10 +39,11 @@ class _AddOrderSearchScreenAnimatedState
       if (query.isEmpty) {
         _filteredItems = itemsProvider.items;
       } else {
+        final q = query.toLowerCase();
         _filteredItems = itemsProvider.items
             .where((item) =>
-                item.name.toLowerCase().contains(query.toLowerCase()) ||
-                item.id.toLowerCase().contains(query.toLowerCase()))
+                item.name.toLowerCase().contains(q) ||
+                item.id.toLowerCase().contains(q))
             .toList();
       }
     });
@@ -83,8 +84,8 @@ class _AddOrderSearchScreenAnimatedState
 
     final order = app_models.Order(
       items: _orderItems,
-      total: _orderItems.fold(
-          0.0, (sum, e) => sum + e.item.price * e.quantity),
+      total:
+          _orderItems.fold(0.0, (sum, e) => sum + e.item.price * e.quantity),
       createdAt: DateTime.now(),
     );
 
@@ -111,16 +112,18 @@ class _AddOrderSearchScreenAnimatedState
     setState(() => _orderItems.clear());
   }
 
-  Widget _buildOrderItemTile(app_models.OrderItem orderItem,
-      Animation<double> animation,
-      {bool removed = false}) {
+  Widget _buildOrderItemTile(
+    app_models.OrderItem orderItem,
+    Animation<double> animation, {
+    bool removed = false,
+  }) {
     final curvedAnimation = CurvedAnimation(
       parent: animation,
       curve: removed ? Curves.easeInBack : Curves.easeOutBack,
     );
 
     return SizeTransition(
-      sizeFactor: animation,
+      sizeFactor: curvedAnimation,
       axisAlignment: 0.0,
       child: FadeTransition(
         opacity: animation,
@@ -190,7 +193,8 @@ class _AddOrderSearchScreenAnimatedState
                         )
                       : null,
                 ),
-                onChanged: _searchItems,
+                // خليها صريحة التوقيع (لتفادي أي لبس بالمحلل)
+                onChanged: (text) => _searchItems(text),
               ),
             ),
             Expanded(

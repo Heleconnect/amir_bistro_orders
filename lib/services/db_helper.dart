@@ -8,7 +8,7 @@ import '../models/order.dart' as app_models; // ✅ Alias حتى ما يتعار
 
 class DBHelper {
   static Database? _db;
-  static const int _version = 2; // 🚀 رقم النسخة
+  static const int _version = 3; // 🚀 رفعنا نسخة DB عشان نضيف number
   static const String _dbName = 'bistro.db';
 
   // 📌 أسماء الجداول كثوابت
@@ -63,6 +63,7 @@ class DBHelper {
     await db.execute('''
       CREATE TABLE $tableOrders(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        number INTEGER, -- ✅ رقم الطلب
         total REAL,
         done INTEGER,
         createdAt INTEGER
@@ -87,27 +88,44 @@ class DBHelper {
     print("✅ Database & Tables Created Successfully with Indexes");
   }
 
-  // 🔄 تحديثات مستقبلية
+  // 🔄 تحديثات مستقبلية (Migration)
   static Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
+    if (oldVersion < 3) {
+      // إعادة تسمية الجدول القديم
       await db.execute("ALTER TABLE $tableOrders RENAME TO temp_orders");
 
+      // إنشاء جدول جديد مع العمود number
       await db.execute('''
         CREATE TABLE $tableOrders(
           id INTEGER PRIMARY KEY AUTOINCREMENT,
+          number INTEGER,
           total REAL,
           done INTEGER,
           createdAt INTEGER
         )
       ''');
 
+      // نسخ البيانات القديمة
       final oldOrders = await db.query("temp_orders");
       for (var order in oldOrders) {
+        final createdAtValue = order['createdAt'];
+        int createdAtInt;
+
+        if (createdAtValue is int) {
+          createdAtInt = createdAtValue;
+        } else if (createdAtValue is String) {
+          createdAtInt = DateTime.tryParse(createdAtValue)?.millisecondsSinceEpoch ??
+              DateTime.now().millisecondsSinceEpoch;
+        } else {
+          createdAtInt = DateTime.now().millisecondsSinceEpoch;
+        }
+
         await db.insert(tableOrders, {
           'id': order['id'],
+          'number': order['id'], // ✅ نخلي الرقم يساوي id القديم كحل مبدئي
           'total': order['total'],
           'done': order['done'],
-          'createdAt': DateTime.parse(order['createdAt'] as String).millisecondsSinceEpoch,
+          'createdAt': createdAtInt,
         });
       }
 
@@ -207,14 +225,12 @@ class DBHelper {
     return maps.map((m) => Note.fromMap(m)).toList();
   }
 
-  /// ✅ يرجع كل الملاحظات
   static Future<List<Note>> getAllNotes() async {
     final db = await database;
     final maps = await db.query(tableNotes, orderBy: 'id DESC');
     return maps.map((m) => Note.fromMap(m)).toList();
   }
 
-  /// ✅ تحديث ملاحظة
   static Future<int> updateNote(Note note) async {
     final db = await database;
     return await db.update(
@@ -225,13 +241,11 @@ class DBHelper {
     );
   }
 
-  /// ✅ حذف ملاحظة
   static Future<int> deleteNote(int id) async {
     final db = await database;
     return await db.delete(tableNotes, where: 'id = ?', whereArgs: [id]);
   }
 
-  /// ✅ مسح كل الملاحظات
   static Future<void> clearNotes() async {
     final db = await database;
     await db.delete(tableNotes);
@@ -245,6 +259,7 @@ class DBHelper {
       final orderId = await txn.insert(
         tableOrders,
         {
+          'number': order.number, // ✅ رقم الطلب
           'total': order.total,
           'done': order.done ? 1 : 0,
           'createdAt': order.createdAt.millisecondsSinceEpoch,
@@ -295,6 +310,7 @@ class DBHelper {
 
       orders.add(app_models.Order(
         id: orderId,
+        number: (map['number'] as int?) ?? orderId, // ✅ fallback إذا null
         items: items,
         total: (map['total'] as num).toDouble(),
         done: (map['done'] as int) == 1,
@@ -312,6 +328,7 @@ class DBHelper {
       final result = await txn.update(
         tableOrders,
         {
+          'number': order.number,
           'total': order.total,
           'done': order.done ? 1 : 0,
           'createdAt': order.createdAt.millisecondsSinceEpoch,

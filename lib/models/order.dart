@@ -11,11 +11,24 @@ class OrderItem {
     List<String>? notes,
   }) : notes = notes ?? [];
 
+  /// ✅ دالة copyWith للتعديل السريع
+  OrderItem copyWith({
+    Item? item,
+    int? quantity,
+    List<String>? notes,
+  }) {
+    return OrderItem(
+      item: item ?? this.item,
+      quantity: quantity ?? this.quantity,
+      notes: notes ?? this.notes,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
-    'item': item.toJson(),
-    'quantity': quantity,
-    'notes': notes,
-  };
+        'item': item.toJson(),
+        'quantity': quantity,
+        'notes': notes,
+      };
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     return OrderItem(
@@ -30,6 +43,7 @@ class OrderItem {
 
 class Order {
   int? id; // SQLite AUTO INCREMENT
+  int number; // ✅ رقم الطلب (قابل للتغيير)
   List<OrderItem> items;
   double total;
   bool done;
@@ -37,24 +51,26 @@ class Order {
 
   Order({
     this.id,
+    this.number = 0, // افتراضي صفر
     required this.items,
     required this.total,
     this.done = false,
     required this.createdAt,
   });
 
-  int get number => id ?? 0;
-
   // ✅ SQLite
   Map<String, dynamic> toMap() => {
-    'total': total,
-    'done': done ? 1 : 0,
-    'createdAt': createdAt.toIso8601String(),
-  };
+        'id': id,
+        'number': number,
+        'total': total,
+        'done': done ? 1 : 0,
+        'createdAt': createdAt.toIso8601String(),
+      };
 
   factory Order.fromMap(Map<String, dynamic> map, List<OrderItem> items) {
     return Order(
       id: map['id'] as int?,
+      number: map['number'] ?? 0,
       total: (map['total'] ?? 0).toDouble(),
       done: (map['done'] ?? 0) == 1,
       items: items,
@@ -64,17 +80,18 @@ class Order {
 
   // ✅ JSON
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'number': number,
-    'total': total,
-    'done': done,
-    'createdAt': createdAt.toIso8601String(),
-    'items': items.map((e) => e.toJson()).toList(),
-  };
+        'id': id,
+        'number': number,
+        'total': total,
+        'done': done,
+        'createdAt': createdAt.toIso8601String(),
+        'items': items.map((e) => e.toJson()).toList(),
+      };
 
   factory Order.fromJson(Map<String, dynamic> json) {
     return Order(
       id: json['id'] as int?,
+      number: json['number'] ?? 0,
       total: (json['total'] is num) ? (json['total'] as num).toDouble() : 0.0,
       done: json['done'] ?? false,
       createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
