@@ -1,265 +1,354 @@
-import 'dart:async';
-import 'package:flutter/foundation.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert';
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
+import '../models/item.dart';
+import '../models/category.dart';
+import '../models/note.dart';
+import '../models/order.dart' as app_models; // ✅ Alias حتى ما يتعارض مع Firestore
 
-import '../models/order.dart';
-import '../services/db_helper.dart';
-import 'settings_provider.dart';
+class DBHelper {
+  static Database? _db;
+  static const int _version = 2; // 🚀 رقم النسخة
+  static const String _dbName = 'bistro.db';
 
-enum OrdersFilterType { all, done, notDone }
+  // 📌 أسماء الجداول كثوابت
+  static const String tableCategories = "categories";
+  static const String tableItems = "items";
+  static const String tableNotes = "notes";
+  static const String tableOrders = "orders";
+  static const String tableOrderItems = "order_items";
 
-class OrdersProvider with ChangeNotifier {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  final List<Order> _orders = [];
-  final List<Order> _pendingSyncOrders = [];
-  String _searchQuery = "";
-  OrdersFilterType _filterType = OrdersFilterType.all;
-
-  int _orderCounter = 1;
-  final SettingsProvider settings;
-  StreamSubscription? _ordersSubscription; // إضافة للإشراف على الاشتراك
-
-  OrdersProvider({required this.settings}) {
-    _initialize();
+  static Future<Database> get database async {
+    if (_db != null) return _db!;
+    _db = await _initDB();
+    return _db!;
   }
 
-  // تهيئة المشترك والبيانات
-  void _initialize() async {
-    await loadOrders(); // تحميل الطلبات المحلية أولاً
-    _ordersSubscription = _firestore
-        .collection("orders")
-        .snapshots()
-        .listen(_updateOrdersFromSnapshot);
+  static Future<Database> _initDB() async {
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, _dbName);
+    return await openDatabase(
+      path,
+      version: _version,
+      onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
+    );
+  }
 
-    Timer.periodic(const Duration(seconds: 10), (_) {
-      if (_pendingSyncOrders.isNotEmpty) {
-        _syncPendingOrders();
+  static Future<void> _onCreate(Database db, int version) async {
+    await db.execute('''
+      CREATE TABLE $tableCategories(
+        id TEXT PRIMARY KEY,
+        name TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE $tableItems(
+        id TEXT PRIMARY KEY,
+        name TEXT,
+        price REAL,
+        categoryId TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE $tableNotes(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        content TEXT,
+        orderId INTEGER
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE $tableOrders(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        total REAL,
+        done INTEGER,
+        createdAt INTEGER
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE $tableOrderItems(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        orderId INTEGER,
+        itemId TEXT,
+        quantity INTEGER,
+        notes TEXT
+      )
+    ''');
+
+    // ✅ فهارس
+    await db.execute("CREATE INDEX idx_items_categoryId ON $tableItems(categoryId)");
+    await db.execute("CREATE INDEX idx_order_items_orderId ON $tableOrderItems(orderId)");
+    await db.execute("CREATE INDEX idx_notes_orderId ON $tableNotes(orderId)");
+
+    print("✅ Database & Tables Created Successfully with Indexes");
+  }
+
+  // 🔄 تحديثات مستقبلية
+  static Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute("ALTER TABLE $tableOrders RENAME TO temp_orders");
+
+      await db.execute('''
+        CREATE TABLE $tableOrders(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          total REAL,
+          done INTEGER,
+          createdAt INTEGER
+        )
+      ''');
+
+      final oldOrders = await db.query("temp_orders");
+      for (var order in oldOrders) {
+        await db.insert(tableOrders, {
+          'id': order['id'],
+          'total': order['total'],
+          'done': order['done'],
+          'createdAt': DateTime.parse(order['createdAt'] as String).millisecondsSinceEpoch,
+        });
       }
+
+      await db.execute("DROP TABLE temp_orders");
+    }
+  }
+
+  // ================== 📌 CATEGORIES ==================
+  static Future<int> insertCategory(Category category) async {
+    final db = await database;
+    return await db.insert(
+      tableCategories,
+      category.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  static Future<List<Category>> getCategories() async {
+    final db = await database;
+    final maps = await db.query(tableCategories);
+    return maps.map((m) => Category.fromMap(m)).toList();
+  }
+
+  static Future<int> deleteCategory(String id) async {
+    final db = await database;
+    return await db.delete(tableCategories, where: 'id = ?', whereArgs: [id]);
+  }
+
+  static Future<int> updateCategory(Category category) async {
+    final db = await database;
+    return await db.update(
+      tableCategories,
+      category.toMap(),
+      where: 'id = ?',
+      whereArgs: [category.id],
+    );
+  }
+
+  // ================== 📌 ITEMS ==================
+  static Future<int> insertItem(Item item) async {
+    final db = await database;
+    return await db.insert(
+      tableItems,
+      item.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  static Future<List<Item>> getItemsByCategory(String categoryId) async {
+    final db = await database;
+    final maps = await db.query(
+      tableItems,
+      where: 'categoryId = ?',
+      whereArgs: [categoryId],
+    );
+    return maps.map((m) => Item.fromMap(m)).toList();
+  }
+
+  static Future<List<Item>> getAllItems() async {
+    final db = await database;
+    final maps = await db.query(tableItems);
+    return maps.map((m) => Item.fromMap(m)).toList();
+  }
+
+  static Future<int> deleteItem(String id) async {
+    final db = await database;
+    return await db.delete(tableItems, where: 'id = ?', whereArgs: [id]);
+  }
+
+  static Future<int> updateItem(Item item) async {
+    final db = await database;
+    return await db.update(
+      tableItems,
+      item.toMap(),
+      where: 'id = ?',
+      whereArgs: [item.id],
+    );
+  }
+
+  // ================== 📌 NOTES ==================
+  static Future<int> insertNote(Note note) async {
+    final db = await database;
+    return await db.insert(
+      tableNotes,
+      note.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  static Future<List<Note>> getNotesByOrder(int orderId) async {
+    final db = await database;
+    final maps = await db.query(
+      tableNotes,
+      where: 'orderId = ?',
+      whereArgs: [orderId],
+    );
+    return maps.map((m) => Note.fromMap(m)).toList();
+  }
+
+  /// ✅ يرجع كل الملاحظات
+  static Future<List<Note>> getAllNotes() async {
+    final db = await database;
+    final maps = await db.query(tableNotes, orderBy: 'id DESC');
+    return maps.map((m) => Note.fromMap(m)).toList();
+  }
+
+  /// ✅ تحديث ملاحظة
+  static Future<int> updateNote(Note note) async {
+    final db = await database;
+    return await db.update(
+      tableNotes,
+      note.toMap(),
+      where: 'id = ?',
+      whereArgs: [note.id],
+    );
+  }
+
+  /// ✅ حذف ملاحظة
+  static Future<int> deleteNote(int id) async {
+    final db = await database;
+    return await db.delete(tableNotes, where: 'id = ?', whereArgs: [id]);
+  }
+
+  /// ✅ مسح كل الملاحظات
+  static Future<void> clearNotes() async {
+    final db = await database;
+    await db.delete(tableNotes);
+  }
+
+  // ================== 📌 ORDERS ==================
+  static Future<int> insertOrder(app_models.Order order) async {
+    final db = await database;
+
+    return await db.transaction<int>((txn) async {
+      final orderId = await txn.insert(
+        tableOrders,
+        {
+          'total': order.total,
+          'done': order.done ? 1 : 0,
+          'createdAt': order.createdAt.millisecondsSinceEpoch,
+        },
+      );
+
+      for (var oi in order.items) {
+        await txn.insert(tableOrderItems, {
+          'orderId': orderId,
+          'itemId': oi.item.id,
+          'quantity': oi.quantity,
+          'notes': jsonEncode(oi.notes),
+        });
+      }
+
+      return orderId;
     });
   }
 
-  // التخلص من الموارد عند التدمير
-  @override
-  void dispose() {
-    _ordersSubscription?.cancel(); // إلغاء الاشتراك لمنع التسرب
-    super.dispose();
+  static Future<List<app_models.Order>> getOrders() async {
+    final db = await database;
+
+    final orderMaps = await db.query(tableOrders, orderBy: 'id DESC');
+    List<app_models.Order> orders = [];
+
+    for (var map in orderMaps) {
+      final orderId = map['id'] as int;
+
+      final itemMaps = await db.rawQuery('''
+        SELECT oi.quantity, oi.notes, i.id as itemId, i.name, i.price, i.categoryId
+        FROM $tableOrderItems oi
+        JOIN $tableItems i ON oi.itemId = i.id
+        WHERE oi.orderId = ?
+      ''', [orderId]);
+
+      final items = itemMaps.map((m) {
+        return app_models.OrderItem(
+          item: Item(
+            id: m['itemId'] as String,
+            name: m['name'] as String,
+            price: (m['price'] as num).toDouble(),
+            categoryId: m['categoryId'] as String,
+          ),
+          quantity: m['quantity'] as int,
+          notes: (jsonDecode(m['notes'] as String) as List).cast<String>(),
+        );
+      }).toList();
+
+      orders.add(app_models.Order(
+        id: orderId,
+        items: items,
+        total: (map['total'] as num).toDouble(),
+        done: (map['done'] as int) == 1,
+        createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] as int),
+      ));
+    }
+
+    return orders;
   }
 
-  // ================== 📌 Getters ==================
-  List<Order> get orders => [..._orders];
-  int get nextOrderNumber => _orderCounter;
+  static Future<int> updateOrder(app_models.Order order) async {
+    final db = await database;
 
-  List<Order> get filteredOrders {
-    return _orders.where((o) {
-      final matchesSearch = _searchQuery.isEmpty ||
-          o.number.toString().contains(_searchQuery);
+    return await db.transaction<int>((txn) async {
+      final result = await txn.update(
+        tableOrders,
+        {
+          'total': order.total,
+          'done': order.done ? 1 : 0,
+          'createdAt': order.createdAt.millisecondsSinceEpoch,
+        },
+        where: 'id = ?',
+        whereArgs: [order.id],
+      );
 
-      final matchesFilter = _filterType == OrdersFilterType.all ||
-          (_filterType == OrdersFilterType.done && o.done) ||
-          (_filterType == OrdersFilterType.notDone && !o.done);
+      await txn.delete(tableOrderItems, where: 'orderId = ?', whereArgs: [order.id]);
 
-      return matchesSearch && matchesFilter;
-    }).toList();
-  }
-
-  OrdersFilterType get filterType => _filterType;
-
-  // ================== 📌 تحميل الطلبات ==================
-  Future<void> loadOrders() async {
-    try {
-      final localOrders = await DBHelper.getOrders();
-      _orders
-        ..clear()
-        ..addAll(localOrders);
-
-      // تحميل الطلبات من Firebase للمزامنة
-      final snapshot = await _firestore.collection("orders").get();
-      for (var doc in snapshot.docs) {
-        final orderData = doc.data();
-        if (orderData.isNotEmpty) {
-          final order = Order.fromJson(orderData);
-          if (!_orders.any((o) => o.number == order.number)) {
-            final orderId = await DBHelper.insertOrder(order);
-            order.id = orderId;
-            _orders.add(order);
-          }
-        }
+      for (var oi in order.items) {
+        await txn.insert(tableOrderItems, {
+          'orderId': order.id,
+          'itemId': oi.item.id,
+          'quantity': oi.quantity,
+          'notes': jsonEncode(oi.notes),
+        });
       }
 
-      // تحديث العداد
-      _updateOrderCounter();
-      notifyListeners();
-    } catch (e) {
-      debugPrint("⚠️ خطأ في تحميل الطلبات: $e");
-    }
+      return result;
+    });
   }
 
-  // تحديث عداد الطلبات
-  void _updateOrderCounter() {
-    if (_orders.isNotEmpty) {
-      _orderCounter = _orders.map((o) => o.number).reduce((a, b) => a > b ? a : b) + 1;
-    } else {
-      _orderCounter = 1;
-    }
+  static Future<int> deleteOrder(int id) async {
+    final db = await database;
+
+    return await db.transaction<int>((txn) async {
+      await txn.delete(tableOrderItems, where: 'orderId = ?', whereArgs: [id]);
+      return await txn.delete(tableOrders, where: 'id = ?', whereArgs: [id]);
+    });
   }
 
-  // ================== 📌 إضافة طلب جديد ==================
-  Future<void> addOrder(Order order) async {
-    try {
-      order.number = _orderCounter;
-
-      final orderId = await DBHelper.insertOrder(order);
-      order.id = orderId;
-
-      _orders.add(order);
-      _pendingSyncOrders.add(order);
-      _orderCounter++;
-
-      await _syncPendingOrders();
-      notifyListeners();
-    } catch (e) {
-      debugPrint("⚠️ خطأ في إضافة الطلب: $e");
-      rethrow;
-    }
-  }
-
-  // ================== 📌 تحديث من Firebase ==================
-  void _updateOrdersFromSnapshot(QuerySnapshot snapshot) async {
-    try {
-      for (var doc in snapshot.docs) {
-        final orderData = doc.data() as Map<String, dynamic>;
-        if (orderData.isNotEmpty) {
-          final order = Order.fromJson(orderData);
-          final existingIndex = _orders.indexWhere((o) => o.number == order.number);
-          
-          if (existingIndex == -1) {
-            // طلب جديد من Firebase
-            final orderId = await DBHelper.insertOrder(order);
-            order.id = orderId;
-            _orders.add(order);
-          } else {
-            // تحديث طلب موجود
-            final existingOrder = _orders[existingIndex];
-            existingOrder.done = order.done;
-            existingOrder.total = order.total;
-            existingOrder.items = order.items;
-            existingOrder.notes = order.notes;
-            await DBHelper.updateOrder(existingOrder);
-          }
-        }
-      }
-
-      _updateOrderCounter();
-      notifyListeners();
-    } catch (e) {
-      debugPrint("⚠️ خطأ في تحديث الطلبات من Firebase: $e");
-    }
-  }
-
-  // ================== 📌 مزامنة الطلبات المعلقة ==================
-  Future<void> _syncPendingOrders() async {
-    if (_pendingSyncOrders.isEmpty) return;
-
-    final List<Order> syncedOrders = [];
-    final List<Order> failedOrders = [];
-
-    for (var order in _pendingSyncOrders) {
-      try {
-        await _firestore
-            .collection("orders")
-            .doc(order.number.toString())
-            .set(order.toJson(), SetOptions(merge: true));
-
-        syncedOrders.add(order);
-      } catch (e) {
-        debugPrint("⚠️ فشل مزامنة الطلب ${order.number}: $e");
-        failedOrders.add(order);
-      }
-    }
-
-    _pendingSyncOrders
-      ..removeWhere((o) => syncedOrders.contains(o))
-      ..addAll(failedOrders); // إعادة الطلبات الفاشلة للمحاولة لاحقاً
-
-    if (syncedOrders.isNotEmpty) {
-      debugPrint("✅ تمت مزامنة ${syncedOrders.length} طلب بنجاح مع Firebase");
-    }
-  }
-
-  // ================== 📌 حذف كل الطلبات ==================
-  Future<void> clearAllOrders() async {
-    try {
-      // حذف من Firebase
-      final batch = _firestore.batch();
-      final snapshot = await _firestore.collection("orders").get();
-      for (var doc in snapshot.docs) {
-        batch.delete(doc.reference);
-      }
-      await batch.commit();
-
-      // حذف محلي
-      _orders.clear();
-      _pendingSyncOrders.clear();
-      _orderCounter = 1;
-      
-      await DBHelper.clearOrders();
-      notifyListeners();
-      
-    } catch (e) {
-      debugPrint("⚠️ خطأ عند حذف الطلبات: $e");
-      rethrow;
-    }
-  }
-
-  // ================== 📌 الحصول على طلب ==================
-  Order? getOrderByNumber(int number) {
-    try {
-      return _orders.firstWhere((o) => o.number == number);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  // ================== 📌 تحديث حالة الطلب ==================
-  Future<void> setOrderDone(int number, bool done) async {
-    try {
-      final order = getOrderByNumber(number);
-      if (order == null) return;
-
-      order.done = done;
-      notifyListeners();
-
-      // تحديث محلي
-      await DBHelper.updateOrder(order);
-
-      // محاولة المزامنة مع Firebase
-      try {
-        await _firestore
-            .collection("orders")
-            .doc(number.toString())
-            .update({'done': done});
-      } catch (e) {
-        debugPrint("⚠️ فشل مزامنة حالة الطلب: $e");
-        if (!_pendingSyncOrders.contains(order)) {
-          _pendingSyncOrders.add(order);
-        }
-      }
-    } catch (e) {
-      debugPrint("⚠️ خطأ عند تحديث حالة الطلب: $e");
-      rethrow;
-    }
-  }
-
-  // ================== 📌 البحث ==================
-  void searchOrders(String query) {
-    _searchQuery = query;
-    notifyListeners();
-  }
-
-  // ================== 📌 تغيير الفلتر ==================
-  void setFilterType(OrdersFilterType type) {
-    _filterType = type;
-    notifyListeners();
+  static Future<void> clearOrders() async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete(tableOrderItems);
+      await txn.delete(tableOrders);
+    });
   }
 }

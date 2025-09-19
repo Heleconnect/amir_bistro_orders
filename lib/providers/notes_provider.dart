@@ -8,7 +8,7 @@ class NotesProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   final List<Note> _notes = [];
-  final List<Note> _pendingNotes = []; // ملاحظات لم تُزامن بعد
+  final List<Note> _pendingNotes = []; // 🕒 ملاحظات لم تُزامن بعد
 
   NotesProvider() {
     // ✅ تحميل الملاحظات عند البداية
@@ -21,16 +21,16 @@ class NotesProvider with ChangeNotifier {
   List<Note> get notes => [..._notes];
 
   // ======================
-  // تحميل الملاحظات
+  // تحميل الملاحظات (كلها)
   // ======================
   Future<void> loadNotes() async {
-    // تحميل محلي
-    final localNotes = await DBHelper.getNotesByOrder(-1); // -1 = كل الملاحظات
+    // 🔹 تحميل محلي
+    final localNotes = await DBHelper.getAllNotes();
     _notes
       ..clear()
       ..addAll(localNotes);
 
-    // تحميل من Firebase ودمج
+    // 🔹 تحميل من Firebase ودمج
     final snapshot = await _firestore.collection("notes").get();
     for (var doc in snapshot.docs) {
       final note = Note.fromJson(doc.data());
@@ -73,13 +73,23 @@ class NotesProvider with ChangeNotifier {
     final index = _notes.indexWhere((n) => n.id == note.id);
     if (index == -1) return;
 
-    _notes[index].content = newContent;
+    // ✅ تعديل نسخة جديدة بدلاً من التغيير على final
+    final updatedNote = Note(
+      id: note.id,
+      content: newContent,
+      orderId: note.orderId,
+    );
+    _notes[index] = updatedNote;
     notifyListeners();
 
     try {
-      await _firestore.collection("notes").doc(note.id.toString()).update({'content': newContent});
+      await _firestore
+          .collection("notes")
+          .doc(note.id.toString())
+          .update({'content': newContent});
+      await DBHelper.insertNote(updatedNote); // نحدث SQLite
     } catch (_) {
-      _pendingNotes.add(_notes[index]);
+      _pendingNotes.add(updatedNote);
     }
   }
 
@@ -94,17 +104,29 @@ class NotesProvider with ChangeNotifier {
       await _firestore.collection("notes").doc(note.id.toString()).delete();
     } catch (_) {}
 
-    // لا تنسى SQLite
-    // (DBHelper.deleteNote غير موجود عندك، لكن تقدر تضيفه لاحقاً لو حبيت)
+    // 🔹 SQLite
+    if (note.id != null) {
+      await DBHelper.deleteNote(note.id!);
+    }
   }
 
   // ======================
   // مسح كل الملاحظات
   // ======================
-  void clearAllNotes() {
+  Future<void> clearAllNotes() async {
     _notes.clear();
     notifyListeners();
-    // يمكن إضافة DBHelper.clearNotes() لو احتجتها
+
+    try {
+      final batch = _firestore.batch();
+      final snapshot = await _firestore.collection("notes").get();
+      for (var doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    } catch (_) {}
+
+    await DBHelper.clearNotes();
   }
 
   // ======================
@@ -132,7 +154,10 @@ class NotesProvider with ChangeNotifier {
   Future<void> syncPendingNotes() async {
     for (var note in List<Note>.from(_pendingNotes)) {
       try {
-        await _firestore.collection("notes").doc(note.id.toString()).set(note.toJson());
+        await _firestore
+            .collection("notes")
+            .doc(note.id.toString())
+            .set(note.toJson());
         _pendingNotes.remove(note);
       } catch (_) {}
     }

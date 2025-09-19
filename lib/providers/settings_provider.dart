@@ -104,7 +104,7 @@ class SettingsProvider with ChangeNotifier {
   }
 
   // ======================
-  // 🔹 حفظ الإعدادات (محلي + Firebase مع Debounce)
+  // 🔹 حفظ الإعدادات
   // ======================
   Future<void> saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -123,7 +123,6 @@ class SettingsProvider with ChangeNotifier {
     if (_customerPrinterName != null) prefs.setString("customerPrinterName", _customerPrinterName!);
     if (_sharedPrinterName != null) prefs.setString("sharedPrinterName", _sharedPrinterName!);
 
-    // ✅ Debounce → يحفظ في Firebase بعد 3 ثوانٍ
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(seconds: 3), () async {
       try {
@@ -174,7 +173,6 @@ class SettingsProvider with ChangeNotifier {
     _completedEnabled = true;
     _orderCounter = 0;
 
-    // تصفير الطابعات
     _kitchenPrinterName = null;
     _customerPrinterName = null;
     _sharedPrinterName = null;
@@ -202,7 +200,6 @@ class SettingsProvider with ChangeNotifier {
     }
   }
 
-  // ✅ مسح إعدادات الطابعات فقط
   void resetPrinters() {
     _kitchenPrinterName = null;
     _customerPrinterName = null;
@@ -214,12 +211,9 @@ class SettingsProvider with ChangeNotifier {
     saveSettings();
   }
 
-  // ✅ طباعة صفحة اختبار
   Future<bool> printTestPage() async {
     try {
       final printer = BlueThermalPrinter.instance;
-
-      // استخدام الطابعة المشتركة إن وجدت، أو أول طابعة متصلة
       final device = _sharedPrinterDevice ?? _customerPrinterDevice ?? _kitchenPrinterDevice;
       if (device == null) return false;
 
@@ -231,7 +225,8 @@ class SettingsProvider with ChangeNotifier {
       await printer.printNewLine();
       await printer.printCustom("شكراً لاستخدامك النظام ✅", 1, 1);
       await printer.printNewLine();
-      await printer.paperCut(); // قص الورق (لو مدعوم)
+      // ⚠️ بعض الطابعات لا تدعم القص
+      try { await printer.paperCut(); } catch (_) {}
       return true;
     } catch (e) {
       debugPrint("⚠️ فشل في الطباعة التجريبية: $e");

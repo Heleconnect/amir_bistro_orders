@@ -3,29 +3,27 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/item.dart';
-import '../models/category.dart';
+import '../models/category.dart' as app_models;
 import '../services/db_helper.dart';
 
 class ItemsProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  final List<Category> _categories = [];
+  final List<app_models.Category> _categories = [];
   final List<Item> _items = [];
 
-  final List<Category> _pendingCategories = [];
+  final List<app_models.Category> _pendingCategories = [];
   final List<Item> _pendingItems = [];
 
-  List<Category> get categories => [..._categories];
+  List<app_models.Category> get categories => [..._categories];
   List<Item> get items => [..._items];
 
   ItemsProvider() {
     loadData();
 
-    // ✅ الاستماع لتحديثات Firebase
     _firestore.collection("categories").snapshots().listen(_updateCategoriesFromFirebase);
     _firestore.collection("items").snapshots().listen(_updateItemsFromFirebase);
 
-    // ✅ إعادة محاولة المزامنة كل 10 ثواني
     Timer.periodic(const Duration(seconds: 10), (_) {
       if (_pendingCategories.isNotEmpty || _pendingItems.isNotEmpty) {
         _syncPendingData();
@@ -33,9 +31,7 @@ class ItemsProvider with ChangeNotifier {
     });
   }
 
-  // ================== 📌 تحميل البيانات ==================
   Future<void> loadData() async {
-    // 🔹 تحميل من SQLite
     final localCategories = await DBHelper.getCategories();
     final localItems = await DBHelper.getAllItems();
 
@@ -48,10 +44,9 @@ class ItemsProvider with ChangeNotifier {
 
     notifyListeners();
 
-    // 🔹 تحميل من Firebase ودمج
     final catsSnapshot = await _firestore.collection("categories").get();
     for (var doc in catsSnapshot.docs) {
-      final cat = Category.fromJson(doc.data());
+      final cat = app_models.Category.fromJson(doc.data());
       if (!_categories.any((c) => c.id == cat.id)) {
         _categories.add(cat);
         await DBHelper.insertCategory(cat);
@@ -70,8 +65,7 @@ class ItemsProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ================== 📌 الفئات ==================
-  Future<void> addCategory(Category category) async {
+  Future<void> addCategory(app_models.Category category) async {
     _categories.add(category);
     notifyListeners();
 
@@ -96,7 +90,7 @@ class ItemsProvider with ChangeNotifier {
     } catch (_) {}
   }
 
-  Future<void> updateCategory(Category updated) async {
+  Future<void> updateCategory(app_models.Category updated) async {
     final index = _categories.indexWhere((c) => c.id == updated.id);
     if (index >= 0) {
       _categories[index] = updated;
@@ -112,7 +106,6 @@ class ItemsProvider with ChangeNotifier {
     }
   }
 
-  // ================== 📌 الأصناف ==================
   Future<void> addItem(Item item) async {
     _items.add(item);
     notifyListeners();
@@ -153,16 +146,14 @@ class ItemsProvider with ChangeNotifier {
     }
   }
 
-  // ================== 📌 البحث ==================
   List<Item> filteredItems(String query) {
     if (query.isEmpty) return _items;
     return _items.where((i) => i.name.toLowerCase().contains(query.toLowerCase())).toList();
   }
 
-  // ================== 📌 تحديثات Firebase ==================
   void _updateCategoriesFromFirebase(QuerySnapshot snapshot) async {
     for (var doc in snapshot.docs) {
-      final cat = Category.fromJson(doc.data() as Map<String, dynamic>);
+      final cat = app_models.Category.fromJson(doc.data() as Map<String, dynamic>);
       final index = _categories.indexWhere((c) => c.id == cat.id);
 
       if (index >= 0) {
@@ -192,9 +183,8 @@ class ItemsProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ================== 📌 مزامنة البيانات المعلقة ==================
   Future<void> _syncPendingData() async {
-    for (var cat in List<Category>.from(_pendingCategories)) {
+    for (var cat in List<app_models.Category>.from(_pendingCategories)) {
       try {
         await _firestore.collection("categories").doc(cat.id).set(cat.toJson());
         _pendingCategories.remove(cat);
