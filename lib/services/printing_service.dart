@@ -13,9 +13,9 @@ class PrintingService {
 
   PrintingService({required this.settings});
 
-  BluetoothDevice? get _kitchenDevice => settings.kitchenPrinterDevice;
-  BluetoothDevice? get _customerDevice => settings.customerPrinterDevice;
-  BluetoothDevice? get _sharedDevice => settings.sharedPrinterDevice;
+  BluetoothDevice? get _kitchenDevice => settings.kitchenPrinter;
+  BluetoothDevice? get _customerDevice => settings.customerPrinter;
+  BluetoothDevice? get _sharedDevice => settings.sharedPrinter;
 
   /// ===== الاتصال بالطابعة =====
   Future<bool> connectPrinter(BluetoothDevice device, PrinterType type) async {

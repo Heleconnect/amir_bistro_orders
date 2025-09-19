@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/item.dart';
-import '../models/order.dart' as app_models; // ✅ alias
+import '../models/order.dart' as app_models;
 import '../providers/items_provider.dart';
 import '../providers/orders_provider.dart';
 import '../providers/settings_provider.dart';
@@ -84,7 +84,7 @@ class _AddOrderSearchScreenAnimatedState
     final order = app_models.Order(
       items: _orderItems,
       total: _orderItems.fold(
-          0, (sum, e) => sum + e.item.price * e.quantity.toDouble()),
+          0.0, (sum, e) => sum + e.item.price * e.quantity),
       createdAt: DateTime.now(),
     );
 
@@ -255,7 +255,7 @@ class _AddOrderSearchScreenAnimatedState
                 onPressed: _saveOrder,
                 icon: const Icon(Icons.save),
                 label: Text(
-                  "حفظ وطباعة الطلب (${_orderItems.fold(0, (sum, e) => sum + e.item.price * e.quantity).toStringAsFixed(2)} $currency)",
+                  "حفظ وطباعة الطلب (${_orderItems.fold(0.0, (sum, e) => sum + e.item.price * e.quantity).toStringAsFixed(2)} $currency)",
                 ),
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 50),

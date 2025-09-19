@@ -53,37 +53,37 @@ class _CategoriesTab extends StatelessWidget {
           child: categories.isEmpty
               ? const Center(child: Text("لا توجد أقسام بعد"))
               : ListView.builder(
-            itemCount: categories.length,
-            itemBuilder: (ctx, i) {
-              final category = categories[i];
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: ListTile(
-                  leading: const Icon(Icons.category, color: Colors.blue),
-                  title: Text(category.name),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.orange),
-                        onPressed: () => _showCategoryDialog(
-                          context,
-                          itemsProvider,
-                          category: category,
+                  itemCount: categories.length,
+                  itemBuilder: (ctx, i) {
+                    final category = categories[i];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      child: ListTile(
+                        leading: const Icon(Icons.category, color: Colors.blue),
+                        title: Text(category.name),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.orange),
+                              onPressed: () => _showCategoryDialog(
+                                context,
+                                itemsProvider,
+                                category: category,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () {
+                                itemsProvider.deleteCategory(category.id);
+                              },
+                            ),
+                          ],
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () {
-                          itemsProvider.deleteCategory(category.id);
-                        },
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
         Padding(
           padding: const EdgeInsets.all(12.0),
@@ -129,7 +129,10 @@ class _CategoriesTab extends StatelessWidget {
               if (category == null) {
                 provider.addCategory(controller.text.trim());
               } else {
-                provider.updateCategory(category.copyWith(name: controller.text.trim()));
+                provider.updateCategory(Category(
+                  id: category.id,
+                  name: controller.text.trim(),
+                ));
               }
               Navigator.pop(ctx);
             },
@@ -159,43 +162,43 @@ class _ItemsTab extends StatelessWidget {
           child: items.isEmpty
               ? const Center(child: Text("لا توجد أصناف بعد"))
               : ListView.builder(
-            itemCount: items.length,
-            itemBuilder: (ctx, i) {
-              final item = items[i];
-              final category = categories.firstWhere(
-                    (c) => c.id == item.categoryId,
-                orElse: () => Category(id: "?", name: "غير معروف"),
-              );
+                  itemCount: items.length,
+                  itemBuilder: (ctx, i) {
+                    final item = items[i];
+                    final category = categories.firstWhere(
+                          (c) => c.id == item.categoryId,
+                      orElse: () => Category(id: "?", name: "غير معروف"),
+                    );
 
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: ListTile(
-                  leading: const Icon(Icons.fastfood, color: Colors.green),
-                  title: Text(item.name),
-                  subtitle: Text("${item.price.toStringAsFixed(2)} ${settings.currency} • قسم: ${category.name}"),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.orange),
-                        onPressed: () => _showItemDialog(
-                          context,
-                          itemsProvider,
-                          item: item,
+                    return Card(
+                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      child: ListTile(
+                        leading: const Icon(Icons.fastfood, color: Colors.green),
+                        title: Text(item.name),
+                        subtitle: Text("${item.price.toStringAsFixed(2)} ${settings.currency} • قسم: ${category.name}"),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.orange),
+                              onPressed: () => _showItemDialog(
+                                context,
+                                itemsProvider,
+                                item: item,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () {
+                                itemsProvider.deleteItem(item.id);
+                              },
+                            ),
+                          ],
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () {
-                          itemsProvider.deleteItem(item.id);
-                        },
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
         Padding(
           padding: const EdgeInsets.all(12.0),
@@ -281,7 +284,8 @@ class _ItemsTab extends StatelessWidget {
                   selectedCategoryId!,
                 );
               } else {
-                provider.updateItem(item.copyWith(
+                provider.updateItem(Item(
+                  id: item.id,
                   name: nameController.text.trim(),
                   price: double.parse(priceController.text),
                   categoryId: selectedCategoryId!,
